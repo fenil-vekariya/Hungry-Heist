@@ -1,0 +1,15 @@
+/* Modern UI Theme Variables - Tailwind v4 Style */
+@theme {
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-brand-orange: #f97316;
+  --color-brand-yellow: #fde047;
+  --color-brand-dark: #111827;
+  --color-brand-light: #f9fafb;
+  --color-brand-gray: #f3f4f6;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --shadow-premium: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 15px -5px rgba(0, 0, 0, 0.03);
+  --shadow-premium-hover: 0 20px 40px -5px rgba(0, 0, 0, 0.08), 0 8px 20px -5px rgba(0, 0, 0, 0.04);
+}

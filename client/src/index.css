@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "./modern.css";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    /* Using standard theme variables or aliased classes from @theme */
+    @apply bg-brand-light text-brand-dark m-0;
+  }
+}
+
+.main-content {
+  padding-top: 100px;
+  min-height: calc(100vh - 100px);
+}

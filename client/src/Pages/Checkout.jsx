@@ -1,0 +1,233 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import API from "../services/api";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import { formatPrice } from "../utils/formatters";
+
+function Checkout() {
+    const { items, restaurantId, total, increment, decrement, removeItem, clear, itemCount } = useCart();
+    const navigate = useNavigate();
+    const [userAddress, setUserAddress] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const deliveryCharge = 30;
+    const grandTotal = total + deliveryCharge;
+
+    useEffect(() => {
+        if (itemCount === 0) {
+            navigate("/cart");
+            return;
+        }
+        
+        const fetchAddress = async () => {
+            try {
+                const res = await API.get("/auth/profile");
+                if (res.data.address && res.data.address.city && res.data.address.pin) {
+                    setUserAddress(res.data.address);
+                } else {
+                    setUserAddress(null);
+                }
+            } catch (err) {
+                console.log(err);
+                setUserAddress(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAddress();
+    }, [itemCount, navigate]);
+
+    const handlePlaceOrder = async () => {
+        if (!userAddress) {
+            alert("Please add an address before placing an order.");
+            return;
+        }
+        
+        try {
+            await API.post("/order/place", {
+                restaurant: restaurantId,
+                items: items.map((i) => ({
+                    menuItem: i.menuItem,
+                    quantity: i.quantity,
+                })),
+                paymentMethod: "COD",
+            });
+
+            alert("Order Placed Successfully!");
+            clear();
+            navigate("/my-orders");
+        } catch (err) {
+            console.log(err);
+            alert("Failed to place order.");
+        }
+    };
+
+    if (loading) return <div className="app-page" style={{ textAlign: "center", padding: "40px" }}>Loading checkout...</div>;
+
+    return (
+        <div className="min-h-screen bg-[#fcfcfc] pt-28 pb-20">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 pb-8 border-b border-gray-100">
+                    <div>
+                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight leading-none mb-3">Finalize Your Heist</h2>
+                        <p className="text-gray-500 font-medium">Verify your details and items before placing the order.</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-xl border border-orange-100 shadow-sm">
+                        <i className="fa-solid fa-lock"></i> 256-bit Secure Checkout
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                    {/* Left Column (2/3) - Address & Payment */}
+                    <div className="lg:col-span-7 space-y-8">
+                        {/* Delivery Address Section */}
+                        <Card className="p-8 md:p-10 border-none bg-white shadow-md relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-100 transition-colors"></div>
+                           
+                           <h3 className="text-xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                                <i className="fa-solid fa-location-dot text-orange-500"></i> Delivery Address
+                            </h3>
+
+                            <div className="bg-gray-50 p-6 md:p-8 rounded-[2rem] border border-gray-100 relative group/addr transition-all hover:bg-white hover:border-orange-200">
+                                {userAddress ? (
+                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-orange-500">
+                                                    <i className="fa-solid fa-house-chimney"></i>
+                                                </div>
+                                                <p className="font-extrabold text-gray-900 text-lg leading-tight uppercase tracking-tight">
+                                                    {userAddress.flat}, {userAddress.building}
+                                                </p>
+                                            </div>
+                                            <div className="pl-[52px]">
+                                                <p className="text-gray-500 font-medium text-sm leading-relaxed mb-1">
+                                                    {userAddress.area}, {userAddress.town}
+                                                </p>
+                                                <p className="text-gray-900 font-black text-xs uppercase tracking-widest">
+                                                    {userAddress.city}, {userAddress.state} - {userAddress.pin}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button 
+                                            variant="secondary" 
+                                            className="h-10 text-xs px-6 rounded-xl shrink-0"
+                                            onClick={() => navigate("/profile")}
+                                        >
+                                            Change Address
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6">
+                                        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                                            <i className="fa-solid fa-triangle-exclamation"></i>
+                                        </div>
+                                        <p className="text-red-600 font-black text-sm uppercase tracking-widest mb-4">No Delivery Address Found</p>
+                                        <Button onClick={() => navigate("/profile")} className="shadow-lg shadow-orange-500/20">Add Address in Profile</Button>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+
+                        {/* Payment Method Section */}
+                        <Card className="p-8 md:p-10 border-none bg-white shadow-md">
+                           <h3 className="text-xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                                <i className="fa-solid fa-wallet text-orange-500"></i> Payment Method
+                            </h3>
+
+                            <div className="flex items-center gap-6 p-6 md:p-8 rounded-[2rem] bg-orange-50 border-2 border-orange-500 shadow-inner relative group/pay cursor-default">
+                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/40 animate-pulse">
+                                    <i className="fa-solid fa-check text-xs font-black"></i>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-extrabold text-orange-900 text-lg leading-none mb-1">Cash on Delivery</h4>
+                                    <p className="text-orange-600/70 text-[10px] font-black uppercase tracking-widest leading-none">Safe & Secure checkout</p>
+                                </div>
+                                <div className="hidden md:block w-12 h-12 bg-white/50 rounded-xl flex items-center justify-center text-orange-500 text-xl grayscale-[0.5]">
+                                    <i className="fa-solid fa-hand-holding-dollar"></i>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Right Column (1/3) - Sticky Summary */}
+                    <div className="lg:col-span-5 space-y-8 sticky top-28">
+                        <Card className="p-8 md:p-10 border-none bg-brand-dark shadow-2xl shadow-brand-dark/30 text-white relative overflow-hidden rounded-[2.5rem] group">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-white/10 transition-all duration-1000"></div>
+                            
+                            <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative">
+                                <i className="fa-solid fa-receipt text-orange-500"></i> Summary
+                                <span className="absolute -right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">{itemCount} items</span>
+                            </h3>
+                            
+                            <div className="max-h-[300px] overflow-y-auto pr-2 mb-8 custom-scrollbar space-y-4 relative">
+                                {items.map(item => (
+                                    <div key={item.menuItem} className="flex justify-between items-center group/item p-3 rounded-2xl hover:bg-white/5 transition-colors">
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-sm leading-tight text-gray-100 mb-1">{item.name}</h4>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{formatPrice(item.price)} per unit</p>
+                                        </div>
+                                        <div className="flex items-center gap-3 ml-4 bg-white/10 p-1 rounded-xl shadow-inner">
+                                            <button 
+                                                onClick={() => decrement(item.menuItem)} 
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-brand-dark transition-all duration-300 text-xs"
+                                            >-</button>
+                                            <span className="font-black text-xs w-5 text-center text-orange-500">{item.quantity}</span>
+                                            <button 
+                                                onClick={() => increment(item.menuItem)} 
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-brand-dark transition-all duration-300 text-xs"
+                                            >+</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-8 border-t border-white/10 space-y-4 mb-10 relative">
+                                <div className="flex justify-between items-center text-gray-400 text-xs font-black uppercase tracking-widest">
+                                    <span>Subtotal</span>
+                                    <span className="text-gray-100">{formatPrice(total)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
+                                    <span>Delivery Charges</span>
+                                    <span className="text-gray-100">{formatPrice(deliveryCharge)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+                                    <i className="fa-solid fa-circle-info text-orange-500 text-[10px]"></i>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none">Free delivery applies to orders above {formatPrice(500)}</p>
+                                </div>
+                                <div className="flex justify-between items-end pt-4 mt-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Grand Total</span>
+                                        <span className="text-4xl font-black text-white tracking-tighter leading-none">{formatPrice(grandTotal)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] font-black text-green-500 uppercase tracking-widest leading-none bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20 mb-1">Free GST</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 relative">
+                                <Button 
+                                    fullWidth 
+                                    className="py-5 text-xl font-black shadow-xl shadow-orange-500/20 group h-16 shrink-0 active:scale-95" 
+                                    onClick={handlePlaceOrder} 
+                                    disabled={!userAddress}
+                                >
+                                    CONFIRM HEIST ({formatPrice(grandTotal)})
+                                    <i className="fa-solid fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
+                                </Button>
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">By continuing, you agree to our Terms of Heist.</p>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default Checkout;
