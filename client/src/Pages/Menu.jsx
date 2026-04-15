@@ -12,7 +12,9 @@ function MenuPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [restaurantName, setRestaurantName] = useState("");
+  const [restaurant, setRestaurant] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("default");
 
   const { addItem } = useCart();
   const { restaurantId } = useParams();
@@ -26,7 +28,7 @@ function MenuPage() {
   const fetchRestaurantName = async () => {
     try {
       const res = await API.get(`/restaurant/details/${restaurantId}`);
-      if (res.data) setRestaurantName(res.data.name);
+      if (res.data) setRestaurant(res.data);
     } catch (err) {
       console.log(err);
     }
@@ -56,9 +58,17 @@ function MenuPage() {
     }
   };
 
-  const filteredMenu = selectedCategory === "All"
-    ? menu
-    : menu.filter(item => item.category === selectedCategory);
+  const filteredMenu = menu
+    .filter(item => {
+      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "price-low") return a.price - b.price;
+      if (sortBy === "price-high") return b.price - a.price;
+      return 0; // Default: no additional sorting
+    });
 
   const getCategoryIcon = (name) => {
     const icons = {
@@ -72,41 +82,79 @@ function MenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] pt-28 pb-20">
+    <div className="min-h-screen bg-[#fcfcfc] pt-8 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header Section */}
-        <div className="mb-12">
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
-            {restaurantName ? restaurantName : 'Discover Something'}
-            <span className="text-brand-orange"> Delicious</span>
-          </h2>
-          <p className="text-gray-500 text-lg">Browse our handcrafted selection of premium dishes.</p>
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-2 tracking-tight">
+                {restaurant ? restaurant.name : 'Discover Something'}
+                <span className="text-brand-orange"> Delicious</span>
+              </h2>
+              <div className="flex items-center gap-3">
+                <p className="text-gray-500 text-lg">{restaurant?.description}</p>
+              </div>
+            </div>                   
+          </div>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-4 mb-10 overflow-x-auto pb-4 scrollbar-hide">
-          <button
-            onClick={() => setSelectedCategory("All")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap ${selectedCategory === "All"
-                ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-105"
-                : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
-              }`}
-          >
-            All Items
-          </button>
-          {categories.map((cat) => (
+       
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide flex-1">
             <button
-              key={cat._id}
-              onClick={() => setSelectedCategory(cat.name)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap ${selectedCategory === cat.name
-                  ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-105"
-                  : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
+              onClick={() => setSelectedCategory("All")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-300 whitespace-nowrap text-sm border ${selectedCategory === "All"
+                  ? "bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/20"
+                  : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
                 }`}
             >
-              {getCategoryIcon(cat.name)}
-              {cat.name}
+              All Items
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat._id}
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-300 whitespace-nowrap text-sm border ${selectedCategory === cat.name
+                    ? "bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/20"
+                    : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
+                  }`}
+              >
+                {getCategoryIcon(cat.name)}
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+            
+            <div className="relative w-full sm:w-64 group">
+              <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-orange transition-colors"></i>
+              <input 
+                type="text" 
+                placeholder="Search delicacies..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white border border-gray-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-medium focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange transition-all outline-none shadow-sm"
+              />
+            </div>
+
+           
+            <div className="relative w-full sm:w-48 group">
+              <i className="fa-solid fa-arrow-up-wide-short absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-orange transition-colors"></i>
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full bg-white border border-gray-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-medium focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange transition-all outline-none shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="default">Sort by: Default</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+              <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[10px]"></i>
+            </div>
+          </div>
         </div>
 
         {loading && (
@@ -130,17 +178,20 @@ function MenuPage() {
               <div className="relative h-48 overflow-hidden">
                 {item.image ? (
                   <img
-                    src={item.image}
+                    src={item.image.startsWith("http") ? item.image : `http://localhost:5000/${item.image.replace(/\\/g, '/')}`}
+                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(item.name)}`; }}
                     alt={item.name}
                     className="w-full h-48 object-cover object-center saturate-110 contrast-105 group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="w-full h-full bg-brand-gray flex items-center justify-center text-gray-300">
-                    <i className="fa-solid fa-utensils text-4xl"></i>
-                  </div>
+                  <img
+                    src={`https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(item.name)}`}
+                    alt={item.name}
+                    className="w-full h-48 object-cover object-center saturate-110 contrast-105 group-hover:scale-105 transition-transform duration-500"
+                  />
                 )}
 
-                {/* Minimal Category Badge */}
+                
                 <div className="absolute top-3 left-3">
                   {item.category && (
                     <span className="bg-white/90 backdrop-blur-md text-brand-orange px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
@@ -150,21 +201,20 @@ function MenuPage() {
                 </div>
               </div>
 
-              {/* Content Section */}
+             
               <div className="p-5 flex-1 flex flex-col">
                 <h4 className="text-xl font-bold text-gray-900 mb-2 capitalize">
                   {item.name}
                 </h4>
 
                 <p className="text-gray-500 text-sm mb-6 line-clamp-2 leading-relaxed">
-                  {item.description || "A masterfully crafted dish using only the freshest local ingredients."}
+                  {item.description}
                 </p>
 
                 <div className="text-2xl font-black text-brand-orange mb-6">
                   {formatPrice(item.price)}
                 </div>
 
-                {/* Actions Section (Pushed to bottom) */}
                 <div className="mt-auto space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-gray-440 uppercase tracking-widest">Quantity</span>

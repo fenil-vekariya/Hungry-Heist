@@ -33,9 +33,20 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
 
+  deliveryAgent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
+
+  agentEarning: {
+    type: Number,
+    default: 0
+  },
+
   paymentMethod: {
     type: String,
-    enum: ["COD"],
+    enum: ["COD", "Online"],
     required: true
   },
 
@@ -47,10 +58,30 @@ const orderSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["Pending", "Preparing", "Out for Delivery", "Completed"],
+    enum: ["Pending", "Accepted", "Preparing", "Ready", "Assigned", "Picked Up", "Out for Delivery", "Completed", "Cancelled"],
     default: "Pending"
+  },
+  isReviewed: {
+    type: Boolean,
+    default: false
+  },
+  cancellationReason: {
+    type: String,
+    default: null
+  },
+  cancelledBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
+  cancellationFee: {
+    type: Number,
+    default: 0
+  },
+  deliveryAddress: {
+    type: String,
+    default: ""
   }
-
 }, { timestamps: true });
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.models.Order || mongoose.model("Order", orderSchema);

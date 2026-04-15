@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["customer", "restaurant", "admin"], default: "customer" },
+    role: { type: String, enum: ["customer", "restaurant", "admin", "partner"], default: "customer" },
     phone: { type: String, default: "" },
     address: {
         flat: { type: String, default: "" },
@@ -16,9 +16,14 @@ const userSchema = new mongoose.Schema({
         country: { type: String, default: "" },
         pin: { type: String, default: "" }
     },
+    vehicleType: { type: String, default: "" },
+    vehicleNumber: { type: String, default: "" },
+    isAvailable: { type: Boolean, default: false },
+    currentOrder: { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+    totalEarnings: { type: Number, default: 0 },
+    outstandingBalance: { type: Number, default: 0 },
     isBlocked: { type: Boolean, default: false },
     isApproved: { type: Boolean, default: false }
 }, { timestamps: true });
 
-module.exports = mongoose.model('User', userSchema);
-// Trigger nodemon restart
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

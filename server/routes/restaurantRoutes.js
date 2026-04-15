@@ -13,17 +13,24 @@ const {
   getMyRestaurant,
   getAllRestaurants,
   getRestaurantById,
-  updateRestaurant
+  updateRestaurant,
+  getRevenue
 } = require("../controllers/restaurantController");
 
 router.get("/all", getAllRestaurants);
 router.get("/details/:id", getRestaurantById);
 
+router.get(
+  "/earnings",
+  authMiddleware,
+  roleMiddleware(["restaurant", "admin"]),
+  getRevenue
+);
+
 router.post(
   "/create",
   authMiddleware,
-  roleMiddleware("restaurant"),
-  
+  roleMiddleware(["restaurant"]),
   uploadRestaurantImages,
   createRestaurant
 );
@@ -31,14 +38,14 @@ router.post(
 router.get(
   "/my",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "admin"]), // Admin might need to see the owner's profile
   getMyRestaurant
 );
 
 router.put(
   "/update",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "admin"]),
   uploadRestaurantImages,
   updateRestaurant
 );

@@ -33,12 +33,12 @@ function Restaurants() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] pt-28 pb-20">
+    <div className="min-h-screen bg-[#fcfcfc] pt-8 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header Section */}
-        <div className="mb-12">
+        <div className="mb-6">
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
-            Our Top <span className="text-brand-orange">Partner Restaurants</span>
+            Our Top <span className="text-brand-orange">Partnered Restaurants</span>
           </h2>
           <p className="text-gray-500 text-lg">Discover the best flavors in your neighborhood.</p>
         </div>
@@ -67,21 +67,29 @@ function Restaurants() {
               <div className="relative h-56 shrink-0 overflow-hidden">
                 {r.image ? (
                   <img
-                    src={r.image}
+                    src={r.image.startsWith("http") ? r.image : `http://localhost:5000/${r.image.replace(/\\/g, '/')}`}
+                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(r.name)}`; }}
                     alt={r.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                 ) : (
-                  <div className="w-full h-full bg-brand-gray flex items-center justify-center text-gray-300">
-                     <i className="fa-solid fa-utensils w-16 h-16 flex items-center justify-center text-4xl"></i>
-                  </div>
+                  <img
+                    src={`https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(r.name)}`}
+                    alt={r.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
                 )}
                 
                 {/* Overlay Badge */}
-                <div className="absolute top-4 left-4">
-                  <span className="bg-white/90 backdrop-blur-md text-brand-orange px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center gap-1">
-                    <i className="fa-solid fa-star w-3 h-3 text-brand-yellow"></i> 4.5
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  <span className="bg-white/90 backdrop-blur-md text-brand-orange px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center gap-1">
+                    <i className="fa-solid fa-star w-3 h-3 text-brand-yellow"></i> {r.averageRating || "New"}
                   </span>
+                  {r.reviewCount > 0 && (
+                    <span className="bg-brand-dark/80 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-tighter shadow-sm w-fit">
+                      {r.reviewCount} {r.reviewCount === 1 ? 'Review' : 'Reviews'}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -97,7 +105,7 @@ function Restaurants() {
                   </div>
                   
                   <p className="text-gray-500 text-sm mb-6 leading-relaxed line-clamp-2">
-                    {r.description || "Experience the authentic flavors and warm hospitality of this local gem."}
+                    {r.description}
                   </p>
                 </div>
                 

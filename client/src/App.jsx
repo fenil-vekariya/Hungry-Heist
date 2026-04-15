@@ -9,6 +9,8 @@ import Orders from "./Pages/Orders";
 import RestaurantDashboard from "./Pages/RestaurantDashboard";
 import RestaurantProfile from "./Pages/RestaurantProfile";
 import AdminDashboard from "./Pages/AdminDashboard";
+import DeliveryAgentDashboard from "./Pages/delivaryAgentDashboard";
+import DeliveryAgentProfile from "./Pages/delivaryAgentProfile";
 import RateUs from "./Pages/RateUs";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -31,7 +33,7 @@ function App() {
   return (
     <>
       {!hideNavbar && <Navbar />}
-      <main className="main-content">
+      <main className={hideNavbar ? "" : "pt-20 min-h-[calc(100vh-80px)]"}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -39,7 +41,7 @@ function App() {
           <Route
             path="/restaurants"
             element={
-              <ProtectedRoute allowedRoles={["customer", "admin"]}>
+              <ProtectedRoute allowedRoles={["customer", "admin", "partner"]}>
                 <Restaurants />
               </ProtectedRoute>
             }
@@ -108,15 +110,31 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/delivery-agent-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["partner"]}>
+                <DeliveryAgentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery-agent/profile"
+            element={
+              <ProtectedRoute allowedRoles={["partner"]}>
+                <DeliveryAgentProfile />
+              </ProtectedRoute>
+            }
+          />
           {/* Legacy Redirect */}
           <Route
             path="/restaurant-onboarding"
             element={<Navigate to="/restaurant-profile" replace />}
           />
-          <Route path="*" element={<div className="min-h-[60vh] flex flex-col items-center justify-center p-20">
-            <h1 className="text-4xl font-black text-gray-800">404</h1>
-            <p className="text-gray-500">Page not found</p>
-          </div>} />
+          <Route
+            path="/partner-dashboard"
+            element={<Navigate to="/delivery-agent-dashboard" replace />}
+          />
           <Route
             path="/admin-dashboard"
             element={
@@ -126,6 +144,10 @@ function App() {
             }
           />
           <Route path="/rate-us" element={<RateUs />} />
+          <Route path="*" element={<div className="min-h-[60vh] flex flex-col items-center justify-center p-20">
+            <h1 className="text-4xl font-black text-gray-800">404</h1>
+            <p className="text-gray-500">Page not found</p>
+          </div>} />
         </Routes>
       </main>
       {!hideNavbar && <Footer />}

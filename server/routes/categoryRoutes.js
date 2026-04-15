@@ -5,9 +5,9 @@ const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
 const {
-    getAllCategories,
-    addCategory,
-    deleteCategory
+  getAllCategories,
+  addCategory,
+  deleteCategory
 } = require("../controllers/categoryController");
 
 router.get("/", getAllCategories);

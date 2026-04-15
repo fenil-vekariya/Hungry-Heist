@@ -72,13 +72,11 @@ export function CartProvider({ children }) {
 
   const decrement = (menuItemId) => {
     setItems((prev) =>
-      prev
-        .map((i) =>
-          i.menuItem === menuItemId
-            ? { ...i, quantity: i.quantity - 1 }
-            : i
-        )
-        .filter((i) => i.quantity > 0)
+      prev.map((i) =>
+        i.menuItem === menuItemId
+          ? { ...i, quantity: Math.max(1, i.quantity - 1) }
+          : i
+      )
     );
   };
 

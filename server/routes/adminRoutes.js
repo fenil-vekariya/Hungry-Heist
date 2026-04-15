@@ -14,77 +14,118 @@ const {
   getAllOrdersAdmin,
   deleteOrderAdmin,
   getPendingRestaurants,
-  approveRestaurant
+  approveRestaurant,
+  approveUser,
+  getAllDeliveryAgents,
+  getPendingDeliveryAgents,
+  approveDeliveryAgent,
+  assignAgentToOrder
 } = require("../controllers/adminController");
 
+// Use array format for roleMiddleware for multi-role support
 router.get(
   "/stats",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   getAdminStats
 );
 
 router.get(
   "/users",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   getAllUsers
 );
 
 router.delete(
   "/user/:id",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   deleteUser
 );
 
 router.put(
   "/block/:id",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   toggleBlockUser
 );
 
 router.get(
   "/restaurants",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   getAllRestaurantsAdmin
 );
 
 router.delete(
   "/restaurant/:id",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   deleteRestaurantAdmin
 );
 
 router.get(
   "/pending",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   getPendingRestaurants
 );
 
 router.put(
   "/approve/:id",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   approveRestaurant
 );
 
 router.get(
   "/orders",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   getAllOrdersAdmin
 );
 
 router.delete(
   "/order/:id",
   authMiddleware,
-  roleMiddleware("admin"),
+  roleMiddleware(["admin"]),
   deleteOrderAdmin
+);
+
+router.get(
+  "/delivery-agents",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  getAllDeliveryAgents
+);
+
+router.get(
+  "/delivery-agents/pending",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  getPendingDeliveryAgents
+);
+
+router.put(
+  "/delivery-agents/approve/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  approveDeliveryAgent
+);
+
+router.post(
+  "/delivery-agents/assign",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  assignAgentToOrder
+);
+
+router.put(
+  "/approve-user/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  approveUser
 );
 
 module.exports = router;

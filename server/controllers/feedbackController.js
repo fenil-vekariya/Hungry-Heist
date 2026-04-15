@@ -36,3 +36,17 @@ exports.getAllFeedback = async (req, res) => {
         res.status(500).json({ message: "Server error fetching feedback" });
     }
 };
+
+exports.deleteFeedback = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const feedback = await WebsiteFeedback.findByIdAndDelete(id);
+        if (!feedback) {
+            return res.status(404).json({ message: "Feedback not found" });
+        }
+        res.json({ message: "Feedback deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting feedback:", error);
+        res.status(500).json({ message: "Server error deleting feedback" });
+    }
+};

@@ -1,14 +1,14 @@
-const User = require("../models/user");
+const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, vehicleType, vehicleNumber, phone } = req.body;
 
     console.log("Registered Role:", role);
 
-    const validRoles = ["customer", "restaurant"];
+    const validRoles = ["customer", "restaurant", "partner"];
     const finalRole = role || "customer";
     if (!validRoles.includes(finalRole)) {
       return res.status(400).json({ message: "Invalid role selected. Admin registration is disabled." });
@@ -26,7 +26,10 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       role: finalRole,
-      isApproved: finalRole === "restaurant" ? false : true
+      phone: phone || "",
+      vehicleType: finalRole === "partner" ? vehicleType : "",
+      vehicleNumber: finalRole === "partner" ? vehicleNumber : "",
+      isApproved: (finalRole === "restaurant" || finalRole === "partner") ? false : true
     });
 
     await newUser.save();
@@ -59,7 +62,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    if (user.role === "restaurant" && !user.isApproved) {
+    if ((user.role === "restaurant" || user.role === "partner") && !user.isApproved) {
       return res.status(403).json({ message: "Waiting for admin approval" });
     }
 
@@ -106,6 +109,12 @@ exports.updateProfile = async (req, res) => {
     user.name = name || user.name;
     user.email = email || user.email;
     user.phone = phone !== undefined ? phone : user.phone;
+    
+    // Support for partner details
+    if (user.role === "partner") {
+      if (req.body.vehicleType) user.vehicleType = req.body.vehicleType;
+      if (req.body.vehicleNumber) user.vehicleNumber = req.body.vehicleNumber;
+    }
 
     await user.save();
     

@@ -1,6 +1,6 @@
-const User = require("../models/user");
+const User = require("../models/User");
 const Restaurant = require("../models/Restaurant");
-const Order = require("../models/order");
+const Order = require("../models/Order");
 const MenuItem = require("../models/MenuItem");
 
 exports.getAdminStats = async (req, res) => {
@@ -10,7 +10,7 @@ exports.getAdminStats = async (req, res) => {
     const totalOrders = await Order.countDocuments();
 
     const revenueResult = await Order.aggregate([
-      { $match: { status: "Completed" } },
+      { $match: { status: { $regex: /^Completed$/i } } },
       {
         $group: {
           _id: null,
@@ -36,10 +36,9 @@ exports.getAdminStats = async (req, res) => {
 
 exports.getPendingRestaurants = async (req, res) => {
   try {
-    const restaurants = await User.find({
-      role: "restaurant",
+    const restaurants = await Restaurant.find({
       isApproved: false
-    });
+    }).populate("owner", "name email");
 
     res.json(restaurants);
   } catch (error) {
@@ -52,16 +51,16 @@ exports.approveRestaurant = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await User.findById(id);
+    const restaurant = await Restaurant.findById(id);
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
     }
 
-    user.isApproved = true;
-    await user.save();
+    restaurant.isApproved = true;
+    await restaurant.save();
 
-    await Restaurant.findOneAndUpdate({ owner: id }, { isApproved: true });
+    await User.findByIdAndUpdate(restaurant.owner, { isApproved: true });
 
     res.json({ message: "Restaurant Approved Successfully" });
   } catch (error) {
@@ -72,7 +71,7 @@ exports.approveRestaurant = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    
+
     const users = await User.find({ role: { $not: /admin/i } }).select("-password");
     res.json(users);
   } catch (error) {
@@ -120,7 +119,7 @@ exports.toggleBlockUser = async (req, res) => {
 
 exports.getAllRestaurantsAdmin = async (req, res) => {
   try {
-    
+
     const orderCounts = await Order.aggregate([
       {
         $group: {
@@ -181,6 +180,7 @@ exports.getAllOrdersAdmin = async (req, res) => {
     const orders = await Order.find(filter)
       .populate("customer", "name email")
       .populate("restaurant", "name")
+      .populate("deliveryAgent", "name email phone")
       .sort({ createdAt: -1 });
 
     res.json(orders);
@@ -194,15 +194,151 @@ exports.deleteOrderAdmin = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const order = await Order.findByIdAndDelete(id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // Deletion Logic: Revert earnings if the order was completed
+    if ((order.status === "Completed" || order.status === "completed") && order.deliveryAgent) {
+      await User.findByIdAndUpdate(order.deliveryAgent, {
+        $inc: { totalEarnings: -(order.agentEarning || 0) }
+      });
+    }
+
+    await Order.findByIdAndDelete(id);
+
     res.json({ message: "Order deleted successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.getAllDeliveryAgents = async (req, res) => {
+  try {
+    const agents = await User.find({ role: "partner" }).select("-password");
+    
+    // Enrich agents with accurate, real-time total earnings and sync the database
+    const enrichedAgents = await Promise.all(agents.map(async (agent) => {
+      const completedOrders = await Order.find({
+        deliveryAgent: agent._id,
+        status: { $regex: /^Completed$/i }
+      });
+      
+      const dynamicTotalEarnings = completedOrders.reduce((sum, order) => sum + (order.agentEarning || 0), 0);
+      
+      // Sync the database field if it's incorrect (Self-healing logic)
+      if (agent.totalEarnings !== dynamicTotalEarnings) {
+        await User.findByIdAndUpdate(agent._id, { totalEarnings: dynamicTotalEarnings });
+        agent.totalEarnings = dynamicTotalEarnings; 
+      }
+      
+      return agent;
+    }));
+
+    res.json(enrichedAgents);
+  } catch (error) {
+    console.error("Fetch Delivery Agents Error:", error);
+    res.status(500).json({ message: "Error fetching delivery agents" });
+  }
+};
+
+exports.assignAgentToOrder = async (req, res) => {
+  try {
+    const { orderId, agentId } = req.body;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    let selectedAgentId = agentId;
+
+    if (!selectedAgentId) {
+      // Logic for automatic selection from Admin Dashboard
+      // 1. Find all potentially eligible partners who are approved, not blocked
+      const allPartners = await User.find({
+        role: "partner",
+        isApproved: true,
+        isBlocked: false
+      }).sort({ totalEarnings: 1 });
+
+      if (allPartners.length === 0) {
+        return res.status(404).json({ message: "No delivery partners found in the system." });
+      }
+
+      // 2. Filter for those who are truly free
+      for (const partner of allPartners) {
+        const activeOrder = await Order.findOne({
+          deliveryAgent: partner._id,
+          status: { $in: [/^Assigned$/i, /^Picked Up$/i, /^Out for Delivery$/i] }
+        });
+
+        if (!activeOrder) {
+          selectedAgentId = partner._id;
+          break;
+        }
+      }
+
+      if (!selectedAgentId) {
+        return res.status(404).json({ message: "All delivery partners are currently busy. Please try again later." });
+      }
+    }
+
+    const agent = await User.findById(selectedAgentId);
+    if (!agent) {
+      return res.status(404).json({ message: "Delivery Agent not found" });
+    }
+
+    order.deliveryAgent = selectedAgentId;
+    order.status = "Assigned";
+    await order.save();
+
+    agent.currentOrder = orderId;
+    agent.isAvailable = false;
+    await agent.save();
+
+    res.json({ message: "Delivery Agent assigned successfully", order });
+  } catch (error) {
+    console.error("Manual Assignment Error:", error);
+    res.status(500).json({ message: "Error assigning delivery agent" });
+  }
+};
+
+exports.getPendingDeliveryAgents = async (req, res) => {
+  try {
+    const agents = await User.find({ role: "partner", isApproved: false }).select("-password");
+    res.json(agents);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching pending delivery agents" });
+  }
+};
+
+exports.approveDeliveryAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "Delivery Agent not found" });
+    user.isApproved = true;
+    user.isAvailable = true;
+    await user.save();
+    res.json({ message: "Delivery Agent approved successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error approving delivery agent" });
+  }
+};
+exports.approveUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    
+    user.isApproved = true;
+    await user.save();
+    
+    res.json({ message: `${user.role} approved successfully` });
+  } catch (error) {
+    res.status(500).json({ message: "Error approving user" });
   }
 };

@@ -126,7 +126,7 @@ function RestaurantProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-10 px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-4 pb-10 px-4">
       <div className="max-w-3xl w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-black text-gray-900 mb-2">
@@ -298,6 +298,7 @@ function RestaurantProfile() {
               <label className="text-sm font-medium mb-1 text-gray-600 block px-1">About Your Restaurant</label>
               <textarea 
                 name="description"
+                required
                 rows="3"
                 placeholder="Tell your story to the foodies..."
                 className="w-full px-4 py-2 rounded-xl bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all font-bold text-gray-800"
@@ -335,7 +336,12 @@ function RestaurantProfile() {
             <div className="md:col-span-2 py-4">
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-6 hover:border-orange-400 transition-colors group cursor-pointer relative overflow-hidden">
                 {previewUrl ? (
-                   <img src={previewUrl} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
+                    <img 
+                       src={previewUrl.startsWith("blob:") || previewUrl.startsWith("http") ? previewUrl : `http://localhost:5000/${previewUrl.replace(/\\/g, '/')}`} 
+                       onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(formData?.restaurantName || "Preview")}`; }} 
+                       alt="Preview" 
+                       className="w-full h-40 object-cover rounded-xl" 
+                    />
                 ) : (
                   <>
                     <i className="fa-solid fa-cloud-arrow-up text-4xl text-gray-300 group-hover:text-orange-400 transition-colors mb-2"></i>

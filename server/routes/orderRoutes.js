@@ -11,6 +11,7 @@ const {
   updateOrderStatus
 } = require("../controllers/orderController");
 
+// Customer places order
 router.post(
   "/place",
   authMiddleware,
@@ -18,6 +19,7 @@ router.post(
   placeOrder
 );
 
+// Customer tracks their orders
 router.get(
   "/my",
   authMiddleware,
@@ -25,17 +27,19 @@ router.get(
   getMyOrders
 );
 
+// Restaurant views their orders
 router.get(
   "/restaurant",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "admin"]),
   getRestaurantOrders
 );
 
+// Unified Status Update (Restaurant, Partner, Customer, Admin)
 router.put(
   "/update/:id",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "partner", "customer", "admin"]),
   updateOrderStatus
 );
 

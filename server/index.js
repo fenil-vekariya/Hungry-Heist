@@ -3,8 +3,10 @@ const authRoutes = require("./routes/authRoutes");
 const restaurantRoutes = require("./routes/restaurantRoutes");
 const menuRoutes = require("./routes/menuRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const deliveryAgentRoutes = require("./routes/AgentRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -16,24 +18,23 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(cors());
 app.use(express.json());
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
+app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/restaurant", restaurantRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/order", orderRoutes);
+app.use("/api/delivery-agent", deliveryAgentRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Hungry Heist API Running"); 
+  res.send("Hungry Heist API Running");
 });
 
 const PORT = process.env.PORT || 5000;

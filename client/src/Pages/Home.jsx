@@ -11,6 +11,7 @@ function Home() {
       if (role === "customer") navigate("/menu");
       else if (role === "restaurant") navigate("/restaurant-dashboard");
       else if (role === "admin") navigate("/admin-dashboard");
+      else if (role === "partner") navigate("/delivery-agent-dashboard");
     }
   }, [isAuthenticated, role, navigate]);
 
@@ -43,6 +44,7 @@ function Home() {
       if (role === "customer") navigate("/menu");
       else if (role === "restaurant") navigate("/restaurant-dashboard");
       else if (role === "admin") navigate("/admin-dashboard");
+      else if (role === "partner") navigate("/delivery-agent-dashboard");
     } else {
       navigate("/login?role=customer");
     }
@@ -59,13 +61,13 @@ function Home() {
           <span className="text-xl font-bold text-gray-800">Hungry Heist</span>
         </div>
         <div className="flex gap-4">
-          <button 
+          <button
             onClick={() => navigate("/login")}
             className="px-5 py-2 text-sm font-bold text-gray-600 hover:text-orange-500 transition-colors"
           >
             Login
           </button>
-          <button 
+          <button
             onClick={() => navigate("/register")}
             className="px-6 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-orange-600 transition-all"
           >
@@ -75,7 +77,7 @@ function Home() {
       </nav>
 
       {/* 2. HERO SECTION */}
-      <header className="py-20 px-6 text-center max-w-4xl mx-auto">
+      <header className="py-16 px-6 text-center max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight">
           Discover Delicious <span className="text-orange-500">Food Near You</span>
         </h1>
@@ -83,13 +85,13 @@ function Home() {
           Explore your favorite restaurants with ease. Discover quality food and a seamless ordering experience for dine-in and takeaways.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button 
+          <button
             onClick={handleExplore}
             className="w-full sm:w-auto px-10 py-4 bg-orange-500 text-white rounded-xl font-bold text-lg shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
             Explore Menu
           </button>
-          <button 
+          <button
             onClick={() => navigate("/login")}
             className="w-full sm:w-auto px-10 py-4 bg-white text-gray-700 rounded-xl font-bold text-lg shadow-md border border-gray-100 hover:bg-gray-50 transition-all"
           >

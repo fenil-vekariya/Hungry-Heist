@@ -4,10 +4,12 @@ import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import Card from "../components/Card";
+import BackButton from "../components/BackButton";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,6 +22,7 @@ function Login() {
       if (authRole === "customer") navigate("/menu");
       else if (authRole === "restaurant") navigate("/restaurant-dashboard");
       else if (authRole === "admin") navigate("/admin-dashboard");
+      else if (authRole === "partner") navigate("/delivery-agent-dashboard");
     }
   }, [isAuthenticated, authRole, navigate]);
 
@@ -45,6 +48,7 @@ function Login() {
       if (backendRole === "customer") navigate("/menu");
       else if (backendRole === "restaurant") navigate("/restaurant-dashboard");
       else if (backendRole === "admin") navigate("/admin-dashboard");
+      else if (backendRole === "partner") navigate("/delivery-agent-dashboard");
       
     } catch (err) {
       console.log(err);
@@ -62,6 +66,8 @@ function Login() {
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-orange/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-brand-yellow/10 rounded-full blur-3xl"></div>
       </div>
+
+      <BackButton className="absolute top-6 left-6 z-50" />
 
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
         <div className="flex flex-col items-center text-center mb-8">
@@ -96,12 +102,19 @@ function Login() {
                 <i className="fa-solid fa-lock"></i>
               </span>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full pl-14 pr-4 py-3 rounded-xl bg-gray-100 border-none focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-200"
+                className="w-full pl-14 pr-12 py-3 rounded-xl bg-gray-100 border-none focus:outline-none focus:ring-2 focus:ring-orange-400 transition duration-200 font-medium tracking-wider"
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors p-1"
+              >
+                <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+              </button>
             </div>
           </div>
 

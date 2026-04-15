@@ -20,4 +20,4 @@ const websiteFeedbackSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model("WebsiteFeedback", websiteFeedbackSchema);
+module.exports = mongoose.models.WebsiteFeedback || mongoose.model("WebsiteFeedback", websiteFeedbackSchema);

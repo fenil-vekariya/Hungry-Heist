@@ -12,6 +12,7 @@ const {
   addMenuItem,
   getMyMenu,
   deleteMenuItem,
+  updateMenuItem,
   getMenuByRestaurant,
   getAllMenuItems
 } = require("../controllers/menuController");
@@ -22,23 +23,30 @@ router.get("/all", getAllMenuItems);
 router.post(
   "/add",
   authMiddleware,
-  roleMiddleware("restaurant"),
-  
+  roleMiddleware(["restaurant"]),
   uploadMenuItemImage,
   addMenuItem
+);
+
+router.put(
+  "/update/:id",
+  authMiddleware,
+  roleMiddleware(["restaurant"]),
+  uploadMenuItemImage,
+  updateMenuItem
 );
 
 router.get(
   "/my",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "admin"]),
   getMyMenu
 );
 
 router.delete(
   "/delete/:id",
   authMiddleware,
-  roleMiddleware("restaurant"),
+  roleMiddleware(["restaurant", "admin"]),
   deleteMenuItem
 );
 

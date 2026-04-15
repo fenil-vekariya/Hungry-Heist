@@ -4,7 +4,7 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 
 function AdminDashboard() {
-  
+
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const [stats, setStats] = useState(null);
@@ -16,10 +16,14 @@ function AdminDashboard() {
 
   const [orders, setOrders] = useState([]);
 
+  const [deliveryAgents, setDeliveryAgents] = useState([]);
+  const [pendingAgents, setPendingAgents] = useState([]);
+
   const [categories, setCategories] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const [feedback, setFeedback] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,6 +36,9 @@ function AdminDashboard() {
     fetchOrders();
     fetchCategories();
     fetchFeedback();
+    fetchDeliveryAgents();
+    fetchPendingAgents();
+    fetchReviews();
   }, []);
 
   const fetchStats = async () => {
@@ -74,6 +81,35 @@ function AdminDashboard() {
     }
   };
 
+  const fetchDeliveryAgents = async () => {
+    try {
+      const res = await API.get("/admin/delivery-agents");
+      setDeliveryAgents(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const fetchPendingAgents = async () => {
+    try {
+      const res = await API.get("/admin/delivery-agents/pending");
+      setPendingAgents(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const approveAgent = async (id) => {
+    try {
+      await API.put(`/admin/delivery-agents/approve/${id}`);
+      fetchPendingAgents();
+      fetchDeliveryAgents();
+    } catch (err) {
+      console.log(err);
+      setError("Failed to approve delivery agent.");
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -88,6 +124,16 @@ function AdminDashboard() {
     }
   };
 
+  const assignAgent = async (orderId) => {
+    try {
+      await API.post("/admin/delivery-agents/assign", { orderId });
+      fetchOrders();
+      alert("System initiated delivery agent assignment.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to assign delivery agent.");
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const res = await API.get("/category");
@@ -95,6 +141,27 @@ function AdminDashboard() {
     } catch (err) {
       console.log(err);
       setError("Failed to load categories.");
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const res = await API.get("/reviews/admin");
+      setReviews(res.data);
+    } catch (err) {
+      console.log(err);
+      setError("Failed to load reviews.");
+    }
+  };
+
+  const deleteReview = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    try {
+      await API.delete(`/reviews/${id}`);
+      fetchReviews();
+    } catch (err) {
+      console.log(err);
+      setError("Failed to delete review.");
     }
   };
 
@@ -143,6 +210,8 @@ function AdminDashboard() {
     try {
       await API.put(`/admin/approve/${id}`);
       fetchPendingRestaurants();
+      fetchRestaurants();
+      fetchStats();
     } catch (err) {
       console.log(err);
       setError("Failed to approve restaurant.");
@@ -154,9 +223,23 @@ function AdminDashboard() {
     try {
       await API.delete(`/admin/user/${id}`);
       fetchPendingRestaurants();
+      fetchRestaurants();
+      fetchStats();
     } catch (err) {
       console.log(err);
       setError("Failed to reject and delete application.");
+    }
+  };
+
+  const approveUser = async (id) => {
+    try {
+      await API.put(`/admin/approve-user/${id}`);
+      fetchUsers();
+      fetchStats();
+      alert("User account approved!");
+    } catch (err) {
+      console.log(err);
+      setError("Failed to approve user account.");
     }
   };
 
@@ -174,6 +257,7 @@ function AdminDashboard() {
     try {
       await API.put(`/admin/block/${id}`);
       fetchUsers();
+      fetchDeliveryAgents();
     } catch (err) {
       console.log(err);
       setError("Failed to update user block status.");
@@ -202,6 +286,17 @@ function AdminDashboard() {
     }
   };
 
+  const handleDeleteFeedback = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this feedback?")) return;
+    try {
+      await API.delete(`/feedback/${id}`);
+      setFeedback((prev) => prev.filter((item) => item._id !== id));
+    } catch (err) {
+      console.log(err);
+      setError("Failed to delete feedback.");
+    }
+  };
+
   const renderDashboardTab = () => {
     return (
       <div className="space-y-10 animate-fade-in">
@@ -211,87 +306,101 @@ function AdminDashboard() {
             System Overview
           </h2>
           {stats && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Users</p>
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight">{stats.totalUsers}</h3>
-                <div className="mt-4 flex items-center gap-1.5 text-green-500">
-                  <i className="fa-solid fa-arrow-up text-[10px]"></i>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">Active Growth</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Users</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight">{stats.totalUsers}</h3>
+                </div>
+                <div className="w-10 h-10 bg-brand-orange/5 text-brand-orange rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-users"></i>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Restaurants</p>
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight">{stats.totalRestaurants}</h3>
-                <div className="mt-4 flex items-center gap-1.5 text-brand-orange">
-                  <i className="fa-solid fa-store text-[10px]"></i>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">Partnerships</span>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Restaurants</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight">{stats.totalRestaurants}</h3>
+                </div>
+                <div className="w-10 h-10 bg-brand-orange/5 text-brand-orange rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-utensils"></i>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Orders</p>
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight">{stats.totalOrders}</h3>
-                <div className="mt-4 flex items-center gap-1.5 text-blue-500">
-                  <i className="fa-solid fa-receipt text-[10px]"></i>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">Completed</span>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Orders</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight">{stats.totalOrders}</h3>
+                </div>
+                <div className="w-10 h-10 bg-brand-orange/5 text-brand-orange rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-receipt"></i>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenue</p>
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight">₹{stats.totalRevenue}</h3>
-                <div className="mt-4 flex items-center gap-1.5 text-brand-yellow">
-                  <i className="fa-solid fa-wallet text-[10px]"></i>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">Gross Earnings</span>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenue</p>
+                  <h3 className="text-2xl font-black text-brand-orange">₹{stats.totalRevenue}</h3>
+                </div>
+                <div className="w-10 h-10 bg-brand-orange/5 text-brand-orange rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-indian-rupee-sign"></i>
+                </div>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Delivery Agents</p>
+                  <h3 className="text-2xl font-black text-gray-800 tracking-tight">{deliveryAgents.length}</h3>
+                </div>
+                <div className="w-10 h-10 bg-brand-orange/5 text-brand-orange rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-motorcycle"></i>
                 </div>
               </div>
             </div>
+
           )}
         </div>
 
-        <div>
-          <h3 className="text-xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
-            <i className="fa-solid fa-clock-rotate-left text-brand-orange text-sm"></i>
-            Registration Queue
-          </h3>
-          <div className="space-y-4">
-            {pendingRestaurants.length === 0 ? (
-              <div className="bg-white p-12 rounded-2xl border-2 border-dashed border-gray-100 text-center">
-                <i className="fa-solid fa-circle-check text-4xl text-gray-200 mb-3"></i>
-                <p className="text-gray-400 font-medium">All applications have been processed.</p>
-              </div>
-            ) : pendingRestaurants.map((user) => (
-              <div key={user._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-orange/5 group-hover:text-brand-orange transition-colors">
-                    <i className="fa-solid fa-building-circle-exclamation text-xl"></i>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Restaurant Queue */}
+          <div>
+            <h3 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
+              <i className="fa-solid fa-store text-brand-orange"></i>
+              Restaurant Queue ({pendingRestaurants.length})
+            </h3>
+            <div className="space-y-3">
+              {pendingRestaurants.length === 0 ? (
+                <p className="text-sm text-gray-400 italic bg-white p-4 rounded-xl border border-dashed border-gray-100">No pending restaurants</p>
+              ) : pendingRestaurants.map(rest => (
+                <div key={rest._id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-lg font-black text-gray-800">{user.name}</h4>
-                    <p className="text-sm text-gray-500 font-medium">{user.email}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-100">Pending Approval</span>
-                    </div>
+                    <span className="text-sm font-bold text-gray-700 block">{rest.name}</span>
+                    <span className="text-[10px] text-gray-400 font-medium">Owner: {rest.owner?.name}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveRestaurant(rest._id)} className="p-1 px-3 bg-green-500 text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
+                    <button onClick={() => rejectRestaurant(rest.owner?._id || rest.owner)} className="p-1 px-3 bg-red-50 text-red-500 text-[10px] font-black rounded-lg uppercase">Reject</button>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3 shrink-0">
-                  <button 
-                    onClick={() => rejectRestaurant(user._id)}
-                    className="px-6 py-2.5 bg-red-50 text-red-500 rounded-full text-xs font-black border border-red-100 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2"
-                  >
-                    <i className="fa-solid fa-xmark"></i>
-                    Reject
-                  </button>
-                  <button 
-                    onClick={() => approveRestaurant(user._id)}
-                    className="px-6 py-2.5 bg-brand-orange text-white rounded-full text-xs font-black shadow-lg shadow-brand-orange/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                  >
-                    <i className="fa-solid fa-check"></i>
-                    Approve Application
-                  </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Delivery Agent Queue */}
+          <div>
+            <h3 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
+              <i className="fa-solid fa-motorcycle text-brand-orange"></i>
+              Delivery Agent Queue ({pendingAgents.length})
+            </h3>
+            <div className="space-y-3">
+              {pendingAgents.length === 0 ? (
+                <p className="text-sm text-gray-400 italic bg-white p-4 rounded-xl border border-dashed border-gray-100">No pending delivery agents</p>
+              ) : pendingAgents.map(user => (
+                <div key={user._id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-gray-700 leading-none">{user.name}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{user.vehicleType} - {user.vehicleNumber}</p>
+                  </div>
+                  <button onClick={() => approveAgent(user._id)} className="p-1 px-3 bg-brand-orange text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -319,7 +428,7 @@ function AdminDashboard() {
                   {user.isBlocked ? "Blocked" : "Active"}
                 </div>
               </div>
-              
+
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm">
                   <i className="fa-regular fa-envelope text-gray-300 w-4"></i>
@@ -328,6 +437,14 @@ function AdminDashboard() {
               </div>
 
               <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50">
+                {(!user.isApproved && (user.role === "restaurant" || user.role === "partner")) && (
+                  <button
+                    onClick={() => approveUser(user._id)}
+                    className="flex-1 py-2 bg-brand-orange text-white rounded-xl text-xs font-black shadow-sm shadow-brand-orange/20 hover:scale-105 active:scale-95 transition-all uppercase"
+                  >
+                    Approve Account
+                  </button>
+                )}
                 <button
                   onClick={() => handleToggleBlockUser(user._id)}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${user.isBlocked ? "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white" : "bg-gray-50 text-gray-600 hover:bg-red-600 hover:text-white"}`}
@@ -365,14 +482,27 @@ function AdminDashboard() {
                     <i className="fa-solid fa-key text-[8px]"></i> ID: {rest._id.slice(-6)}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-orange/5 group-hover:text-brand-orange transition-colors">
-                  <i className="fa-solid fa-store"></i>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-orange/5 group-hover:text-brand-orange transition-colors">
+                    <i className="fa-solid fa-store"></i>
+                  </div>
+                  {rest.isApproved ? (
+                    <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                      Approved
+                    </span>
+                  ) : (
+                    <span className="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-yellow-100 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                      Pending
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-4 mb-8">
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100/50">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Owner Information</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Owner Information</p>
                   <p className="text-sm font-bold text-gray-700">{rest.owner?.name}</p>
                   <p className="text-xs text-gray-500">{rest.owner?.email}</p>
                 </div>
@@ -387,7 +517,7 @@ function AdminDashboard() {
                 className="w-full py-3 bg-red-50 text-red-500 rounded-xl text-xs font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-trash-can"></i>
-                Terminate Partnership
+                Terminate Registration
               </button>
             </div>
           ))}
@@ -396,6 +526,66 @@ function AdminDashboard() {
               No restaurants found in the database.
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAgentsTab = () => {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-2xl font-extrabold text-gray-800 mb-8 border-b border-gray-100 pb-4 flex items-center gap-2">
+          <i className="fa-solid fa-motorcycle text-brand-orange text-sm"></i>
+          Delivery Agents
+        </h2>
+
+        {pendingAgents.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-1">Pending Approval ({pendingAgents.length})</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {pendingAgents.map(p => (
+                <div key={p._id} className="bg-white p-5 rounded-2xl border-2 border-orange-100 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black text-gray-800">{p.name}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{p.vehicleType} • {p.vehicleNumber}</p>
+                  </div>
+                  <button onClick={() => approveAgent(p._id)} className="bg-brand-orange text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-brand-orange/20">Approve</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {deliveryAgents.map((agent) => (
+            <div key={agent._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-orange/5 group-hover:text-brand-orange transition-colors">
+                  <i className="fa-solid fa-person-biking text-xl"></i>
+                </div>
+              </div>
+              <h4 className="text-lg font-black text-gray-800 mb-1">{agent.name}</h4>
+              <p className="text-xs text-gray-400 font-medium mb-4">{agent.email}</p>
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-gray-50 p-2 rounded-lg text-center">
+                  <p className="text-[8px] font-black text-gray-400 uppercase">Earnings</p>
+                  <p className="text-sm font-black text-gray-700">₹{agent.totalEarnings}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded-lg text-center">
+                  <p className="text-[8px] font-black text-gray-400 uppercase">Vehicle</p>
+                  <p className="text-[10px] font-bold text-gray-700 truncate px-1">{agent.vehicleNumber}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleToggleBlockUser(agent._id)}
+                className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${agent.isBlocked ? "bg-green-50 text-green-600" : "bg-red-50 text-red-400 hover:bg-red-500 hover:text-white"}`}
+              >
+                {agent.isBlocked ? "Unblock Agent" : "Restrict Access"}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -418,11 +608,13 @@ function AdminDashboard() {
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Transaction ID</p>
                   <p className="text-xs font-mono font-bold text-gray-800 bg-gray-50 px-2 py-1 rounded inline-block">#{order._id.slice(-8)}</p>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                  order.status === "Pending" ? "bg-amber-50 text-amber-600" :
-                  order.status === "Completed" ? "bg-green-50 text-green-600" :
-                  "bg-blue-50 text-blue-600"
-                }`}>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${order.status === "Pending" ? "bg-amber-50 text-amber-600" :
+                    order.status === "Accepted" ? "bg-teal-50 text-teal-600" :
+                    order.status === "Completed" ? "bg-green-50 text-green-600" :
+                    order.status === "Ready" ? "bg-purple-100 text-purple-600" :
+                    order.status === "Assigned" ? "bg-indigo-100 text-indigo-600" :
+                    "bg-blue-50 text-blue-600"
+                  }`}>
                   {order.status}
                 </div>
               </div>
@@ -438,6 +630,29 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              {order.deliveryAgent && (
+                <div className="mb-6 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <i className="fa-solid fa-motorcycle text-indigo-500"></i>
+                    <div>
+                      <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Assigned Agent</p>
+                      <p className="text-[10px] font-bold text-indigo-900">{order.deliveryAgent.name}</p>
+                    </div>
+                  </div>
+                  <span className="text-[8px] font-black text-indigo-400 bg-white px-2 py-0.5 rounded-full border border-indigo-50">EARNED: ₹{order.agentEarning}</span>
+                </div>
+              )}
+
+              {["Accepted", "Preparing", "Ready"].includes(order.status) && !order.deliveryAgent && (
+                <button
+                  onClick={() => assignAgent(order._id)}
+                  className="w-full mb-6 py-3 bg-brand-orange text-white rounded-xl text-[10px] font-black shadow-lg shadow-brand-orange/20 uppercase tracking-widest flex items-center justify-center gap-2"
+                >
+                  <i className="fa-solid fa-robot"></i>
+                  Manually Assign Agent
+                </button>
+              )}
+
               <div className="space-y-2 mb-8 border-b border-gray-50 pb-4">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-400 font-bold uppercase tracking-tighter">Amount</span>
@@ -451,7 +666,7 @@ function AdminDashboard() {
 
               <div className="flex items-center justify-between">
                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">{new Date(order.createdAt).toLocaleString()}</p>
-                <button 
+                <button
                   onClick={() => handleDeleteOrder(order._id)}
                   className="p-2 text-red-300 hover:text-red-500 transition-colors"
                   title="Delete Transaction Record"
@@ -475,7 +690,6 @@ function AdminDashboard() {
     return (
       <div className="animate-fade-in">
         <h2 className="text-2xl font-extrabold text-gray-800 mb-8 border-b border-gray-100 pb-4">Content Management</h2>
-
         <div className="bg-brand-orange shadow-lg shadow-brand-orange/10 rounded-2xl p-6 sm:p-8 mb-12 text-white overflow-hidden relative group">
           <div className="relative z-10">
             <h3 className="text-xl font-black mb-6 flex items-center gap-2">
@@ -490,8 +704,8 @@ function AdminDashboard() {
                 required
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white focus:text-gray-800 rounded-xl px-4 py-3 outline-none transition-all"
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="bg-white text-brand-orange font-black px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50"
               >
@@ -499,10 +713,8 @@ function AdminDashboard() {
               </button>
             </form>
           </div>
-          {/* Bg Decor */}
           <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
         </div>
-
         <h3 className="text-lg font-black text-gray-800 mb-6 px-1">Active Platform Categories</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((cat) => (
@@ -513,7 +725,7 @@ function AdminDashboard() {
                 </div>
                 <span className="font-bold text-gray-700 leading-none">{cat.name}</span>
               </div>
-              <button 
+              <button
                 onClick={() => handleDeleteCategory(cat._id)}
                 className="w-8 h-8 rounded-lg text-red-300 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center"
               >
@@ -522,6 +734,53 @@ function AdminDashboard() {
             </div>
           ))}
           {categories.length === 0 && <p className="col-span-full py-12 text-center text-gray-400 font-medium">No categories currently active.</p>}
+        </div>
+      </div>
+    );
+  };
+
+  const renderReviewsTab = () => {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-2xl font-extrabold text-gray-800 mb-8 border-b border-gray-100 pb-4">Order Reviews Moderation</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {reviews.map((review) => (
+            <div key={review._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-orange/10 text-brand-orange rounded-xl flex items-center justify-center font-black">
+                    {review.customer?.name?.charAt(0) || "C"}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-gray-800">{review.customer?.name}</h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">At {review.restaurant?.name}</p>
+                  </div>
+                </div>
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <i key={i} className={`fa-solid fa-star text-[10px] ${i < review.rating ? "text-brand-yellow" : "text-gray-100"}`}></i>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100/50 mb-4">
+                <p className="text-sm text-gray-600 leading-relaxed italic">"{review.comment}"</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] text-gray-400 font-medium uppercase">{new Date(review.createdAt).toLocaleDateString()}</p>
+                <button
+                  onClick={() => deleteReview(review._id)}
+                  className="text-red-400 hover:text-red-600 transition-colors text-xs font-bold flex items-center gap-1"
+                >
+                  <i className="fa-solid fa-trash-can text-[10px]"></i> Delete
+                </button>
+              </div>
+            </div>
+          ))}
+          {reviews.length === 0 && (
+            <div className="col-span-full py-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
+              No order reviews found.
+            </div>
+          )}
         </div>
       </div>
     );
@@ -550,9 +809,18 @@ function AdminDashboard() {
                   ))}
                 </div>
               </div>
-              
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100/50 mb-2">
                 <p className="text-sm text-gray-600 leading-relaxed italic">"{item.message}"</p>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                <p className="text-[10px] text-gray-400 font-medium uppercase">{new Date(item.createdAt).toLocaleDateString()}</p>
+                <button
+                  onClick={() => handleDeleteFeedback(item._id)}
+                  className="text-red-400 hover:text-red-600 transition-colors text-xs font-bold flex items-center gap-1"
+                  title="Delete Feedback"
+                >
+                  <i className="fa-solid fa-trash-can text-[10px]"></i> Delete
+                </button>
               </div>
             </div>
           ))}
@@ -567,10 +835,9 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-12">
+    <div className="min-h-screen bg-gray-50 pt-4 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Admin Dashboard Navbar */}
-        <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-sm rounded-2xl mb-8 border border-gray-100">
+        <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-sm rounded-2xl mb-4 border border-gray-100">
           <div className="flex items-center gap-4">
             <div className="bg-brand-orange/10 p-2.5 rounded-xl text-brand-orange">
               <i className="fa-solid fa-user-shield text-xl"></i>
@@ -579,98 +846,68 @@ function AdminDashboard() {
               <h1 className="text-xl font-black text-gray-800 leading-none">Admin Panel</h1>
               <div className="flex gap-2 items-center mt-1">
                 <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Hungry Heist Control</span>
-                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                <span className="text-[10px] text-brand-orange uppercase tracking-widest font-bold">Secure Access</span>
               </div>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-              <p className="text-sm font-bold text-gray-700">Root Administrator</p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-tighter">System Superuser</p>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-orange-600 text-white rounded-2xl flex items-center justify-center font-bold shadow-lg shadow-brand-orange/20 border-2 border-white">
-              A
-            </div>
+            {/* User profile section removed */}
           </div>
         </nav>
-
         {error && <p className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2 animate-fade-in"><i className="fa-solid fa-circle-exclamation"></i> {error}</p>}
-
-        {/* Dashboard Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Navigation */}
           <aside className="lg:col-span-1">
-            <div className="flex flex-col gap-2 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
+            <div className="flex flex-col gap-2 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 sticky top-20">
               <p className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 mb-2">Management</p>
-              
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "dashboard" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("dashboard")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "dashboard" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("dashboard")}>
                 <i className={`fa-solid fa-chart-pie w-5 ${activeTab === "dashboard" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Dashboard</span>
               </button>
-
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "users" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("users")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "users" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("users")}>
                 <i className={`fa-solid fa-users w-5 ${activeTab === "users" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Users</span>
               </button>
-
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "restaurants" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("restaurants")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "restaurants" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("restaurants")}>
                 <i className={`fa-solid fa-store w-5 ${activeTab === "restaurants" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Restaurants</span>
               </button>
-
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "orders" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("orders")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "deliveryAgents" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("deliveryAgents")}>
+                <i className={`fa-solid fa-motorcycle w-5 ${activeTab === "deliveryAgents" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
+                <span>Delivery Agents</span>
+              </button>
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "orders" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("orders")}>
                 <i className={`fa-solid fa-bag-shopping w-5 ${activeTab === "orders" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Orders</span>
               </button>
-
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "categories" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("categories")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "categories" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("categories")}>
                 <i className={`fa-solid fa-list-check w-5 ${activeTab === "categories" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Categories</span>
               </button>
-
-              <button 
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "feedback" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} 
-                onClick={() => setActiveTab("feedback")}
-              >
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "feedback" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("feedback")}>
                 <i className={`fa-solid fa-comments w-5 ${activeTab === "feedback" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Feedback</span>
               </button>
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "reviews" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("reviews")}>
+                <i className={`fa-solid fa-star w-5 ${activeTab === "reviews" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
+                <span>Reviews</span>
+              </button>
             </div>
           </aside>
-
-          {/* Main Content Area */}
           <main className="lg:col-span-3">
             <div className="min-h-[600px] animate-fade-in">
               {activeTab === "dashboard" && renderDashboardTab()}
               {activeTab === "users" && renderUsersTab()}
               {activeTab === "restaurants" && renderRestaurantsTab()}
+              {activeTab === "deliveryAgents" && renderAgentsTab()}
               {activeTab === "orders" && renderOrdersTab()}
               {activeTab === "categories" && renderCategoriesTab()}
               {activeTab === "feedback" && renderFeedbackTab()}
+              {activeTab === "reviews" && renderReviewsTab()}
             </div>
           </main>
         </div>
       </div>
     </div>
   );
-
 }
 
 export default AdminDashboard;

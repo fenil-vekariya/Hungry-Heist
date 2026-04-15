@@ -98,9 +98,9 @@ function Profile() {
   };
 
   return (
-    <div className="pt-28 pb-20 max-w-4xl mx-auto px-4 sm:px-6">
+    <div className="pt-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6">
       {/* Page Header */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-6">
         <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">My Account</h1>
         <p className="text-gray-500">Manage your profile, account settings, and delivery addresses.</p>
       </div>

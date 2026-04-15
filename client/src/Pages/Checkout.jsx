@@ -4,16 +4,18 @@ import { useCart } from "../context/CartContext";
 import API from "../services/api";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import BackButton from "../components/BackButton";
 import { formatPrice } from "../utils/formatters";
 
 function Checkout() {
     const { items, restaurantId, total, increment, decrement, removeItem, clear, itemCount } = useCart();
     const navigate = useNavigate();
     const [userAddress, setUserAddress] = useState(null);
+    const [outstandingBalance, setOutstandingBalance] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    const deliveryCharge = 30;
-    const grandTotal = total + deliveryCharge;
+    const deliveryCharge = total >= 199 ? 0 : 30;
+    const grandTotal = total + deliveryCharge + outstandingBalance;
 
     useEffect(() => {
         if (itemCount === 0) {
@@ -29,6 +31,7 @@ function Checkout() {
                 } else {
                     setUserAddress(null);
                 }
+                setOutstandingBalance(res.data.outstandingBalance || 0);
             } catch (err) {
                 console.log(err);
                 setUserAddress(null);
@@ -39,6 +42,7 @@ function Checkout() {
 
         fetchAddress();
     }, [itemCount, navigate]);
+
 
     const handlePlaceOrder = async () => {
         if (!userAddress) {
@@ -54,6 +58,9 @@ function Checkout() {
                     quantity: i.quantity,
                 })),
                 paymentMethod: "COD",
+                deliveryAddress: [userAddress.flat, userAddress.building, userAddress.area, userAddress.town, userAddress.city]
+                    .filter(part => part && part.trim() !== "")
+                    .join(", ")
             });
 
             alert("Order Placed Successfully!");
@@ -68,16 +75,14 @@ function Checkout() {
     if (loading) return <div className="app-page" style={{ textAlign: "center", padding: "40px" }}>Loading checkout...</div>;
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc] pt-28 pb-20">
+        <div className="min-h-screen bg-[#fcfcfc] pt-8 pb-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 pb-8 border-b border-gray-100">
+                <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-gray-100">
                     <div>
-                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight leading-none mb-3">Finalize Your Heist</h2>
+                        <BackButton className="mb-6 shadow-brand-orange/5" />
+                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight leading-none mb-3">Confirm Your Order</h2>
                         <p className="text-gray-500 font-medium">Verify your details and items before placing the order.</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-xl border border-orange-100 shadow-sm">
-                        <i className="fa-solid fa-lock"></i> 256-bit Secure Checkout
                     </div>
                 </div>
 
@@ -133,53 +138,43 @@ function Checkout() {
                             </div>
                         </Card>
 
-                        {/* Payment Method Section */}
-                        <Card className="p-8 md:p-10 border-none bg-white shadow-md">
-                           <h3 className="text-xl font-black text-gray-900 mb-8 flex items-center gap-3">
-                                <i className="fa-solid fa-wallet text-orange-500"></i> Payment Method
-                            </h3>
-
-                            <div className="flex items-center gap-6 p-6 md:p-8 rounded-[2rem] bg-orange-50 border-2 border-orange-500 shadow-inner relative group/pay cursor-default">
-                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/40 animate-pulse">
-                                    <i className="fa-solid fa-check text-xs font-black"></i>
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-extrabold text-orange-900 text-lg leading-none mb-1">Cash on Delivery</h4>
-                                    <p className="text-orange-600/70 text-[10px] font-black uppercase tracking-widest leading-none">Safe & Secure checkout</p>
-                                </div>
-                                <div className="hidden md:block w-12 h-12 bg-white/50 rounded-xl flex items-center justify-center text-orange-500 text-xl grayscale-[0.5]">
-                                    <i className="fa-solid fa-hand-holding-dollar"></i>
-                                </div>
+                        <Card className="p-8 md:p-10 border-none bg-white shadow-md flex items-center gap-6">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                                <i className="fa-solid fa-wallet text-xl"></i>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-extrabold text-gray-900 text-lg leading-none mb-1">Cash on Delivery</h4>
+                                <p className="text-orange-600/70 text-[10px] font-black uppercase tracking-widest leading-none">Safe & Secure checkout</p>
                             </div>
                         </Card>
                     </div>
 
                     {/* Right Column (1/3) - Sticky Summary */}
-                    <div className="lg:col-span-5 space-y-8 sticky top-28">
-                        <Card className="p-8 md:p-10 border-none bg-brand-dark shadow-2xl shadow-brand-dark/30 text-white relative overflow-hidden rounded-[2.5rem] group">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-white/10 transition-all duration-1000"></div>
+                    <div className="lg:col-span-5 space-y-8 sticky top-20">
+                        <Card className="p-8 md:p-10 border-none bg-white shadow-xl relative overflow-hidden rounded-[2.5rem] group">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-orange-50 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-orange-100/50 transition-all duration-1000"></div>
                             
-                            <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative">
+                            <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative text-gray-900">
                                 <i className="fa-solid fa-receipt text-orange-500"></i> Summary
                                 <span className="absolute -right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">{itemCount} items</span>
                             </h3>
                             
                             <div className="max-h-[300px] overflow-y-auto pr-2 mb-8 custom-scrollbar space-y-4 relative">
                                 {items.map(item => (
-                                    <div key={item.menuItem} className="flex justify-between items-center group/item p-3 rounded-2xl hover:bg-white/5 transition-colors">
+                                    <div key={item.menuItem} className="flex justify-between items-center group/item p-3 rounded-2xl hover:bg-gray-50 transition-colors">
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-sm leading-tight text-gray-100 mb-1">{item.name}</h4>
+                                            <h4 className="font-bold text-sm leading-tight text-gray-900 mb-1">{item.name}</h4>
                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{formatPrice(item.price)} per unit</p>
                                         </div>
-                                        <div className="flex items-center gap-3 ml-4 bg-white/10 p-1 rounded-xl shadow-inner">
+                                        <div className="flex items-center gap-3 ml-4 bg-gray-100 p-1 rounded-xl shadow-inner text-gray-900">
                                             <button 
                                                 onClick={() => decrement(item.menuItem)} 
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-brand-dark transition-all duration-300 text-xs"
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-orange-500 transition-all duration-300 text-xs shadow-sm"
                                             >-</button>
                                             <span className="font-black text-xs w-5 text-center text-orange-500">{item.quantity}</span>
                                             <button 
                                                 onClick={() => increment(item.menuItem)} 
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-brand-dark transition-all duration-300 text-xs"
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:text-orange-500 transition-all duration-300 text-xs shadow-sm"
                                             >+</button>
                                         </div>
                                     </div>
@@ -187,23 +182,40 @@ function Checkout() {
                             </div>
 
                             <div className="pt-8 border-t border-white/10 space-y-4 mb-10 relative">
-                                <div className="flex justify-between items-center text-gray-400 text-xs font-black uppercase tracking-widest">
+                                <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
                                     <span>Subtotal</span>
-                                    <span className="text-gray-100">{formatPrice(total)}</span>
+                                    <span className="text-gray-900">{formatPrice(total)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
                                     <span>Delivery Charges</span>
-                                    <span className="text-gray-100">{formatPrice(deliveryCharge)}</span>
+                                    <span className={deliveryCharge === 0 ? "text-green-500 font-black" : "text-gray-900"}>
+                                        {deliveryCharge === 0 ? "FREE" : formatPrice(deliveryCharge)}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
-                                    <i className="fa-solid fa-circle-info text-orange-500 text-[10px]"></i>
-                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none">Free delivery applies to orders above {formatPrice(500)}</p>
-                                </div>
-                                <div className="flex justify-between items-end pt-4 mt-2">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Grand Total</span>
-                                        <span className="text-4xl font-black text-white tracking-tighter leading-none">{formatPrice(grandTotal)}</span>
+
+                                {outstandingBalance > 0 && (
+                                    <div className="flex justify-between items-center text-red-500 text-xs font-black uppercase tracking-widest bg-red-50 p-2 rounded-xl border border-red-100">
+                                        <div className="flex items-center gap-2">
+                                            <i className="fa-solid fa-clock-rotate-left"></i>
+                                            <span>Cancellation Fee</span>
+                                        </div>
+                                        <span>{formatPrice(outstandingBalance)}</span>
                                     </div>
+                                )}
+
+                                <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-100">
+                                    <i className="fa-solid fa-circle-info text-orange-500 text-[10px]"></i>
+                                    <p className="text-[9px] text-orange-600 font-bold uppercase tracking-widest leading-none">
+                                        {outstandingBalance > 0 
+                                            ? `Fee from previous late cancellation included.` 
+                                            : `Free delivery applies to orders above ${formatPrice(199)}`}
+                                    </p>
+                                </div>
+                                    <div className="flex justify-between items-end pt-4 mt-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Grand Total</span>
+                                            <span className="text-4xl font-black text-gray-900 tracking-tighter leading-none">{formatPrice(grandTotal)}</span>
+                                        </div>
                                     <div className="flex flex-col items-end">
                                         <span className="text-[9px] font-black text-green-500 uppercase tracking-widest leading-none bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20 mb-1">Free GST</span>
                                     </div>
