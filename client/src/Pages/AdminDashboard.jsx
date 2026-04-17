@@ -218,10 +218,18 @@ function AdminDashboard() {
     }
   };
 
-  const rejectRestaurant = async (id) => {
-    if (!window.confirm("Are you sure you want to REJECT and PERMANENTLY DELETE this restaurant application?")) return;
+  const rejectRestaurant = async (id, isAccountOnly = false) => {
+    const message = isAccountOnly 
+      ? "Are you sure you want to REJECT and PERMANENTLY DELETE this owner account registration?"
+      : "Are you sure you want to REJECT and PERMANENTLY DELETE this restaurant profile?";
+      
+    if (!window.confirm(message)) return;
     try {
-      await API.delete(`/admin/user/${id}`);
+      if (isAccountOnly) {
+        await API.delete(`/admin/user/${id}`);
+      } else {
+        await API.delete(`/admin/restaurant/${id}`);
+      }
       fetchPendingRestaurants();
       fetchRestaurants();
       fetchStats();
@@ -370,12 +378,16 @@ function AdminDashboard() {
               ) : pendingRestaurants.map(rest => (
                 <div key={rest._id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                   <div>
-                    <span className="text-sm font-bold text-gray-700 block">{rest.name}</span>
-                    <span className="text-[10px] text-gray-400 font-medium">Owner: {rest.owner?.name}</span>
+                    <span className="text-sm font-bold text-gray-700 block">
+                      {rest.isAccountOnly ? `Account: ${rest.owner?.name || 'New Registration'}` : (rest.name || 'Unnamed Restaurant')}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      {rest.isAccountOnly ? "Pending Owner Approval" : `Owner: ${rest.owner?.name || 'N/A'}`}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => approveRestaurant(rest._id)} className="p-1 px-3 bg-green-500 text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
-                    <button onClick={() => rejectRestaurant(rest.owner?._id || rest.owner)} className="p-1 px-3 bg-red-50 text-red-500 text-[10px] font-black rounded-lg uppercase">Reject</button>
+                    <button onClick={() => rejectRestaurant(rest._id, rest.isAccountOnly)} className="p-1 px-3 bg-red-50 text-red-500 text-[10px] font-black rounded-lg uppercase">Reject</button>
                   </div>
                 </div>
               ))}

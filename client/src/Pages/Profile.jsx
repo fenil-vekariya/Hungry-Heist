@@ -60,6 +60,9 @@ function Profile() {
     if (infoForm.newPassword && infoForm.newPassword !== infoForm.confirmPassword) {
       return setMessage("Passwords do not match");
     }
+    if (infoForm.phone && infoForm.phone.length !== 10) {
+      return setMessage("Phone number must be exactly 10 digits");
+    }
     setLoading(true);
     try {
       await API.put("/auth/profile", infoForm);
@@ -199,7 +202,7 @@ function Profile() {
 
                 <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                    <input className="w-full h-12" type="text" placeholder="+91 0000000000" value={infoForm.phone} onChange={e => setInfoForm({...infoForm, phone: e.target.value})} />
+                    <input className="w-full h-12" type="text" placeholder="10-digit number" value={infoForm.phone} onChange={e => setInfoForm({...infoForm, phone: e.target.value.replace(/\D/g, "").slice(0, 10)})} maxLength={10} />
                 </div>
 
                 <div className="pt-6 border-t border-gray-100 mt-8">

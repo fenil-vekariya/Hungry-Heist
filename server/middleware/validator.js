@@ -19,6 +19,7 @@ const body = (field) => {
   chain.isIn = () => chain;
   chain.isMobilePhone = () => chain;
   chain.isPostalCode = () => chain;
+  chain.isNumeric = () => chain;
   chain.withMessage = () => chain;
   chain.equals = () => chain;
   chain.if = () => chain;

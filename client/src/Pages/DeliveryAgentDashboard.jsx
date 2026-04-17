@@ -143,15 +143,19 @@ function DeliveryAgentDashboard() {
                   <div className="min-w-0">
                     <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest leading-none mb-1">Pick up From</p>
                     <p className="font-bold text-gray-800 truncate">{dashboardData.assignedOrder.restaurant?.name}</p>
+                    <p className="text-[10px] text-gray-500 font-medium truncate">{dashboardData.assignedOrder.restaurant?.address}</p>
+                    <p className="text-[9px] text-orange-600 font-black mt-1"><i className="fa-solid fa-phone mr-1"></i>{dashboardData.assignedOrder.restaurant?.phone}</p>
                   </div>
                 </div>
                 <div className="bg-gray-50 p-5 rounded-2xl flex items-center gap-4 border border-gray-100">
                   <div className="bg-orange-500/10 w-12 h-12 rounded-xl flex items-center justify-center text-orange-500 shadow-inner">
-                    <i className="fa-solid fa-user text-xl"></i>
+                    <i className="fa-solid fa-location-arrow text-xl"></i>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest leading-none mb-1">Deliver To</p>
                     <p className="font-bold text-gray-800 truncate">{dashboardData.assignedOrder.customer?.name}</p>
+                    <p className="text-[10px] text-orange-600 font-black italic mb-1">{dashboardData.assignedOrder.deliveryAddress || "Address details missing"}</p>
+                    <p className="text-[9px] text-gray-500 font-bold"><i className="fa-solid fa-phone mr-1"></i>{dashboardData.assignedOrder.customer?.phone}</p>
                   </div>
                 </div>
               </div>

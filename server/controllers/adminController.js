@@ -36,13 +36,36 @@ exports.getAdminStats = async (req, res) => {
 
 exports.getPendingRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find({
-      isApproved: false
+    // 1. Fetch restaurant profiles that are NOT approved yet
+    const pendingProfiles = await Restaurant.find({
+      isApproved: { $ne: true }
     }).populate("owner", "name email");
 
-    res.json(restaurants);
+    // 2. Fetch all user accounts that registered as restaurants but aren't approved yet
+    const pendingAccounts = await User.find({
+      role: { $regex: /^restaurant$/i },
+      isApproved: { $ne: true }
+    }).select("name email role createdAt");
+
+    // 3. Format accounts that don't have a profile doc yet
+    // We check if the user ID exists in any existing Restaurant profile (regardless of approval status)
+    const profilesWithOwners = await Restaurant.find({}).select("owner");
+    const ownersWithProfiles = new Set(profilesWithOwners.map(p => p.owner?.toString()).filter(id => id));
+
+    const formattedAccounts = pendingAccounts
+      .filter(acc => !ownersWithProfiles.has(acc._id.toString()))
+      .map(acc => ({
+        _id: acc._id,
+        name: "New Account Registration",
+        owner: { name: acc.name, email: acc.email, _id: acc._id },
+        isAccountOnly: true,
+        createdAt: acc.createdAt
+      }));
+
+    // Combination logic: Profiles take precedence, then New Accounts
+    res.json([...pendingProfiles, ...formattedAccounts]);
   } catch (error) {
-    console.log(error);
+    console.error("Fetch Pending Restaurants Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -51,18 +74,24 @@ exports.approveRestaurant = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const restaurant = await Restaurant.findById(id);
-
-    if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" });
+    // Try finding by Restaurant ID first
+    let restaurant = await Restaurant.findById(id);
+    if (restaurant) {
+      restaurant.isApproved = true;
+      await restaurant.save();
+      await User.findByIdAndUpdate(restaurant.owner, { isApproved: true });
+      return res.json({ message: "Restaurant Approved Successfully" });
     }
 
-    restaurant.isApproved = true;
-    await restaurant.save();
+    // If not found, try finding by User ID (for new account approvals)
+    const user = await User.findById(id);
+    if (user && user.role?.toLowerCase() === "restaurant") {
+      user.isApproved = true;
+      await user.save();
+      return res.json({ message: "Restaurant Owner Account Approved Successfully" });
+    }
 
-    await User.findByIdAndUpdate(restaurant.owner, { isApproved: true });
-
-    res.json({ message: "Restaurant Approved Successfully" });
+    return res.status(404).json({ message: "Restaurant or User not found" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });
@@ -218,7 +247,7 @@ exports.deleteOrderAdmin = async (req, res) => {
 
 exports.getAllDeliveryAgents = async (req, res) => {
   try {
-    const agents = await User.find({ role: "partner" }).select("-password");
+    const agents = await User.find({ role: { $regex: /^partner$/i } }).select("-password");
     
     // Enrich agents with accurate, real-time total earnings and sync the database
     const enrichedAgents = await Promise.all(agents.map(async (agent) => {
@@ -259,7 +288,7 @@ exports.assignAgentToOrder = async (req, res) => {
       // Logic for automatic selection from Admin Dashboard
       // 1. Find all potentially eligible partners who are approved, not blocked
       const allPartners = await User.find({
-        role: "partner",
+        role: { $regex: /^partner$/i },
         isApproved: true,
         isBlocked: false
       }).sort({ totalEarnings: 1 });
@@ -308,9 +337,13 @@ exports.assignAgentToOrder = async (req, res) => {
 
 exports.getPendingDeliveryAgents = async (req, res) => {
   try {
-    const agents = await User.find({ role: "partner", isApproved: false }).select("-password");
+    const agents = await User.find({ 
+      role: { $regex: /^partner$/i }, 
+      isApproved: { $ne: true } 
+    }).select("-password");
     res.json(agents);
   } catch (error) {
+    console.error("DEBUG: getPendingDeliveryAgents Error:", error);
     res.status(500).json({ message: "Error fetching pending delivery agents" });
   }
 };

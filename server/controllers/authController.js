@@ -6,8 +6,6 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, role, vehicleType, vehicleNumber, phone } = req.body;
 
-    console.log("Registered Role:", role);
-
     const validRoles = ["customer", "restaurant", "partner"];
     const finalRole = role || "customer";
     if (!validRoles.includes(finalRole)) {

@@ -31,6 +31,11 @@ function Register() {
 
   const handleRegister = async () => {
     setError("");
+    if (phone.trim().length !== 10) {
+      setError("Phone number must be exactly 10 digits");
+      return;
+    }
+
     if (password.trim() !== confirmPassword.trim()) {
       setError("Passwords do not match");
       return;
@@ -117,7 +122,9 @@ function Register() {
                 type="tel"
                 placeholder="9876543210"
                 className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 text-gray-800"
-                onChange={(e) => setPhone(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                maxLength={10}
                 required
               />
             </div>

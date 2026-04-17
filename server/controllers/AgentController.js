@@ -7,7 +7,7 @@ exports.getDeliveryAgentDashboard = async (req, res) => {
     const assignedOrder = await Order.findOne({
       deliveryAgent: req.user._id,
       status: { $in: ["Assigned", "Picked Up", "Out for Delivery"] }
-    }).populate("restaurant", "name").populate("customer", "name");
+    }).populate("restaurant", "name address phone").populate("customer", "name phone");
 
     // Calculate total earnings dynamically for 100% accuracy
     const completedOrders = await Order.find({
@@ -125,8 +125,8 @@ exports.getMyDeliveries = async (req, res) => {
   try {
     const orders = await Order.find({ deliveryAgent: req.user._id })
       .sort({ createdAt: -1 })
-      .populate("restaurant", "name")
-      .populate("customer", "name");
+      .populate("restaurant", "name address phone")
+      .populate("customer", "name phone");
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: "Error fetching delivery history" });

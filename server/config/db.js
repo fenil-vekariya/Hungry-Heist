@@ -13,8 +13,12 @@ const connectDB = async () => {
     );
     console.log("Partner availability synced");
   } catch (error) {
-    console.log("DB Connection Failed", error);
-    process.exit(1);
+    console.error("CRITICAL: MongoDB Connection Failed!");
+    console.error("Error Detail:", error.message);
+    if (error.code === 'ESERVFAIL') {
+      console.error("DNS Resolution Error: Please check your internet connection or use a local MongoDB URI.");
+    }
+    console.log("Server will continue running, but database features will be unavailable.");
   }
 };
 

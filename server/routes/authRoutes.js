@@ -4,12 +4,6 @@ const { body, validationResult } = require("../middleware/validator");
 const { register, login, getProfile, updateProfile, updateAddress } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// Diagnostic Debugging
-console.log("Validator body type:", typeof body);
-console.log("Register handler type:", typeof register);
-console.log("Login handler type:", typeof login);
-console.log("Auth middleware type:", typeof authMiddleware);
-
 const handleValidation = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -39,6 +33,14 @@ const registerValidation = [
     .withMessage("Password is required")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .isLength({ min: 10, max: 10 })
+    .withMessage("Phone number must be exactly 10 digits")
+    .isNumeric()
+    .withMessage("Phone number must contain only digits"),
   body("role")
     .optional()
     .isIn(["customer", "restaurant", "partner"])
@@ -81,10 +83,11 @@ const updateProfileValidation = [
     .withMessage("Please enter a valid email")
     .normalizeEmail(),
   body("phone")
-    .optional()
     .trim()
-    .isMobilePhone("any")
-    .withMessage("Please enter a valid phone number"),
+    .isLength({ min: 10, max: 10 })
+    .withMessage("Phone number must be exactly 10 digits")
+    .isNumeric()
+    .withMessage("Phone number must contain only digits"),
   body("newPassword")
     .optional()
     .isLength({ min: 6 })
