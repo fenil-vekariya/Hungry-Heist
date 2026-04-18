@@ -36,34 +36,45 @@ exports.getAdminStats = async (req, res) => {
 
 exports.getPendingRestaurants = async (req, res) => {
   try {
-    // 1. Fetch restaurant profiles that are NOT approved yet
-    const pendingProfiles = await Restaurant.find({
-      isApproved: { $ne: true }
-    }).populate("owner", "name email");
+    // 1. Fetch ALL restaurants and filter in JS to be absolutely sure
+    const allProfilesData = await Restaurant.find({}).populate("owner", "name email");
+    const pendingProfiles = allProfilesData.filter(p => p.isApproved !== true);
 
-    // 2. Fetch all user accounts that registered as restaurants but aren't approved yet
-    const pendingAccounts = await User.find({
-      role: { $regex: /^restaurant$/i },
-      isApproved: { $ne: true }
-    }).select("name email role createdAt");
+    // 2. Fetch ALL users and filter for unapproved restaurants
+    const allUsers = await User.find({}).select("name email role createdAt isApproved");
+    const pendingAccounts = allUsers.filter(u => 
+      u.role && u.role.toLowerCase().trim() === "restaurant" && u.isApproved !== true
+    );
 
-    // 3. Format accounts that don't have a profile doc yet
-    // We check if the user ID exists in any existing Restaurant profile (regardless of approval status)
-    const profilesWithOwners = await Restaurant.find({}).select("owner");
-    const ownersWithProfiles = new Set(profilesWithOwners.map(p => p.owner?.toString()).filter(id => id));
+    // 3. Find which of these accounts already have a profile doc
+    const ownersWithProfiles = new Set(
+      allProfilesData
+        .filter(p => p.owner && p.owner._id)
+        .map(p => p.owner._id.toString())
+    );
 
+    // 4. Format accounts without profiles
     const formattedAccounts = pendingAccounts
       .filter(acc => !ownersWithProfiles.has(acc._id.toString()))
       .map(acc => ({
         _id: acc._id,
-        name: "New Account Registration",
+        name: "New Restaurant Registration",
         owner: { name: acc.name, email: acc.email, _id: acc._id },
         isAccountOnly: true,
         createdAt: acc.createdAt
       }));
 
-    // Combination logic: Profiles take precedence, then New Accounts
-    res.json([...pendingProfiles, ...formattedAccounts]);
+    res.json([
+      ...pendingProfiles, 
+      ...formattedAccounts,
+      {
+        _id: "DEBUG_ID",
+        name: `DEBUG-> AllUsers: ${allUsers.length}, PendingAccounts: ${pendingAccounts.length}, Formatted: ${formattedAccounts.length}`,
+        owner: { name: "DEBUG", email: "debug@debug", _id: "DEBUG" },
+        isAccountOnly: true,
+        createdAt: new Date()
+      }
+    ]);
   } catch (error) {
     console.error("Fetch Pending Restaurants Error:", error);
     res.status(500).json({ message: "Server Error" });

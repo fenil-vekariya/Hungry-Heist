@@ -34,6 +34,13 @@ function DeliveryAgentProfile() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    
+    // 1. Mandatory Field Verification
+    if (!profile.name.trim() || !profile.phone.trim() || !profile.vehicleType || !profile.vehicleNumber.trim()) {
+      setMessage({ type: "error", text: "Please fill up all required fields" });
+      return;
+    }
+
     setSaving(true);
     setMessage({ type: "", text: "" });
     try {
@@ -168,6 +175,7 @@ function DeliveryAgentProfile() {
                 </div>
               </div>
             </div>
+
 
             <div className="pt-8 border-t border-gray-50 flex justify-end">
               <button 

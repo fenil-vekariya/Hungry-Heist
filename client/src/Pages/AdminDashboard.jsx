@@ -104,9 +104,23 @@ function AdminDashboard() {
       await API.put(`/admin/delivery-agents/approve/${id}`);
       fetchPendingAgents();
       fetchDeliveryAgents();
+      fetchStats();
     } catch (err) {
       console.log(err);
       setError("Failed to approve delivery agent.");
+    }
+  };
+
+  const rejectAgent = async (id) => {
+    if (!window.confirm("Are you sure you want to REJECT and PERMANENTLY DELETE this delivery agent application?")) return;
+    try {
+      await API.delete(`/admin/user/${id}`);
+      fetchPendingAgents();
+      fetchDeliveryAgents();
+      fetchStats();
+    } catch (err) {
+      console.log(err);
+      setError("Failed to reject agent application.");
     }
   };
 
@@ -368,6 +382,9 @@ function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Restaurant Queue */}
           <div>
+            <div className="mb-2 p-2 bg-yellow-100 text-yellow-800 text-xs font-mono break-all border border-yellow-300">
+              DEBUG /admin/pending: {JSON.stringify(pendingRestaurants)}
+            </div>
             <h3 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
               <i className="fa-solid fa-store text-brand-orange"></i>
               Restaurant Queue ({pendingRestaurants.length})
@@ -409,7 +426,10 @@ function AdminDashboard() {
                     <p className="text-sm font-bold text-gray-700 leading-none">{user.name}</p>
                     <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{user.vehicleType} - {user.vehicleNumber}</p>
                   </div>
-                  <button onClick={() => approveAgent(user._id)} className="p-1 px-3 bg-brand-orange text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveAgent(user._id)} className="p-1 px-3 bg-green-500 text-white text-[10px] font-black rounded-lg uppercase">Approve</button>
+                    <button onClick={() => rejectAgent(user._id)} className="p-1 px-3 bg-red-50 text-red-500 text-[10px] font-black rounded-lg uppercase">Reject</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -561,7 +581,10 @@ function AdminDashboard() {
                     <p className="text-sm font-black text-gray-800">{p.name}</p>
                     <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{p.vehicleType} • {p.vehicleNumber}</p>
                   </div>
-                  <button onClick={() => approveAgent(p._id)} className="bg-brand-orange text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-brand-orange/20">Approve</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveAgent(p._id)} className="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-green-600/20">Approve</button>
+                    <button onClick={() => rejectAgent(p._id)} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase border border-red-100">Reject</button>
+                  </div>
                 </div>
               ))}
             </div>

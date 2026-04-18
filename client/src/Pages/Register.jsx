@@ -31,6 +31,24 @@ function Register() {
 
   const handleRegister = async () => {
     setError("");
+
+    // 1. Mandatory Field Verification ("Fill up the blank")
+    if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
+      setError("Please fill up all the blanks");
+      return;
+    }
+
+    if (role === "partner" && (!vehicleType || !vehicleNumber.trim())) {
+      setError("Please provide your vehicle details to continue");
+      return;
+    }
+
+    // 2. Password Length Verification (Min 6 characters)
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
     if (phone.trim().length !== 10) {
       setError("Phone number must be exactly 10 digits");
       return;

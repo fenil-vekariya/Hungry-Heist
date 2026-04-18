@@ -4,7 +4,7 @@ const Order = require("../models/Order");
 
 exports.createRestaurant = async (req, res) => {
   try {
-    const { name, description, address, email, phone } = req.body;
+    const { name, description, address, email, phone, category, cuisine, openingTime, closingTime, averagePrice, deliveryTime, deliveryCharge } = req.body;
 
     if (!req.user || !req.user._id) {
        return res.status(401).json({ message: "Authentication required" });
@@ -36,6 +36,13 @@ exports.createRestaurant = async (req, res) => {
       owner: req.user._id,
       image: imageUrl || "",
       banner: bannerUrl || "",
+      category: category || "Both",
+      cuisine: cuisine || "",
+      openingTime: openingTime || "09:00",
+      closingTime: closingTime || "22:00",
+      averagePrice: Number(averagePrice) || 0,
+      deliveryTime: deliveryTime || "",
+      deliveryCharge: Number(deliveryCharge) || 0
     });
 
     await restaurant.save();
@@ -57,7 +64,7 @@ exports.createRestaurant = async (req, res) => {
 
 exports.updateRestaurant = async (req, res) => {
   try {
-    const { name, description, address, email, phone } = req.body;
+    const { name, description, address, email, phone, category, cuisine, openingTime, closingTime, averagePrice, deliveryTime, deliveryCharge } = req.body;
 
     if (!req.user || !req.user._id) {
        return res.status(401).json({ message: "Authentication required" });
@@ -74,6 +81,13 @@ exports.updateRestaurant = async (req, res) => {
     if (address) restaurant.address = address;
     if (email) restaurant.email = email;
     if (phone) restaurant.phone = phone;
+    if (category) restaurant.category = category;
+    if (cuisine) restaurant.cuisine = cuisine;
+    if (openingTime) restaurant.openingTime = openingTime;
+    if (closingTime) restaurant.closingTime = closingTime;
+    if (averagePrice !== undefined) restaurant.averagePrice = Number(averagePrice);
+    if (deliveryTime) restaurant.deliveryTime = deliveryTime;
+    if (deliveryCharge !== undefined) restaurant.deliveryCharge = Number(deliveryCharge);
 
     if (req.files && req.files.image && req.files.image[0]) {
       restaurant.image = `uploads/${req.files.image[0].filename}`;

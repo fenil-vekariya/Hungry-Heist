@@ -49,20 +49,20 @@ function RestaurantProfile() {
         
         setFormData({
           restaurantName: p.name || "",
-          ownerName: "", // Backend doesn't store this yet
+          ownerName: p.owner?.name || "", 
           email: p.email || "",
           phone: p.phone || "",
           address: addressParts[0] || "",
           city: city || "",
           pincode: pincodeMatch ? pincodeMatch[0] : "",
-          category: "Both",
-          cuisine: "",
-          openingTime: "09:00",
-          closingTime: "22:00",
+          category: p.category || "Both",
+          cuisine: p.cuisine || "",
+          openingTime: p.openingTime || "09:00",
+          closingTime: p.closingTime || "22:00",
           description: p.description || "",
-          averagePrice: "",
-          deliveryTime: "",
-          deliveryCharge: ""
+          averagePrice: p.averagePrice || "",
+          deliveryTime: p.deliveryTime || "",
+          deliveryCharge: p.deliveryCharge || ""
         });
         setPreviewUrl(p.image);
       }
@@ -89,6 +89,20 @@ function RestaurantProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. Mandatory Field Verification ("Fill up the blank")
+    const requiredFields = [
+      'restaurantName', 'ownerName', 'email', 'phone', 
+      'address', 'city', 'pincode', 'description'
+    ];
+    
+    for (const field of requiredFields) {
+      if (!formData[field] || (typeof formData[field] === 'string' && !formData[field].trim())) {
+        setError(`Please fill up the blank: ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -103,6 +117,13 @@ function RestaurantProfile() {
       // Concatenate detailed address for the main 'address' field
       const fullAddress = `${formData.address}, ${formData.city} - ${formData.pincode}`;
       data.append("address", fullAddress);
+      data.append("category", formData.category);
+      data.append("cuisine", formData.cuisine);
+      data.append("openingTime", formData.openingTime);
+      data.append("closingTime", formData.closingTime);
+      data.append("averagePrice", formData.averagePrice);
+      data.append("deliveryTime", formData.deliveryTime);
+      data.append("deliveryCharge", formData.deliveryCharge);
       
       if (profileImg) {
         data.append("image", profileImg);
