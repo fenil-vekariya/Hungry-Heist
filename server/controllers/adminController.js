@@ -36,24 +36,24 @@ exports.getAdminStats = async (req, res) => {
 
 exports.getPendingRestaurants = async (req, res) => {
   try {
-    // 1. Fetch ALL restaurants and filter in JS to be absolutely sure
+    // 1. Fetch all restaurant profiles and filter unapproved ones in memory for speed/safety
     const allProfilesData = await Restaurant.find({}).populate("owner", "name email");
-    const pendingProfiles = allProfilesData.filter(p => p.isApproved !== true);
+    const pendingProfiles = allProfilesData.filter(p => !p.isApproved);
 
-    // 2. Fetch ALL users and filter for unapproved restaurants
-    const allUsers = await User.find({}).select("name email role createdAt isApproved");
+    // 2. Fetch all users and filter for those registered as restaurants but not yet approved
+    const allUsers = await User.find({}).select("name email role isApproved createdAt");
     const pendingAccounts = allUsers.filter(u => 
-      u.role && u.role.toLowerCase().trim() === "restaurant" && u.isApproved !== true
+      u.role === "restaurant" && !u.isApproved
     );
 
-    // 3. Find which of these accounts already have a profile doc
+    // 3. Track which users already have a profile so we don't duplicate them in the list
     const ownersWithProfiles = new Set(
       allProfilesData
-        .filter(p => p.owner && p.owner._id)
+        .filter(p => p.owner)
         .map(p => p.owner._id.toString())
     );
 
-    // 4. Format accounts without profiles
+    // 4. Accounts that have registered but haven't created a restaurant profile yet
     const formattedAccounts = pendingAccounts
       .filter(acc => !ownersWithProfiles.has(acc._id.toString()))
       .map(acc => ({
@@ -64,17 +64,8 @@ exports.getPendingRestaurants = async (req, res) => {
         createdAt: acc.createdAt
       }));
 
-    res.json([
-      ...pendingProfiles, 
-      ...formattedAccounts,
-      {
-        _id: "DEBUG_ID",
-        name: `DEBUG-> AllUsers: ${allUsers.length}, PendingAccounts: ${pendingAccounts.length}, Formatted: ${formattedAccounts.length}`,
-        owner: { name: "DEBUG", email: "debug@debug", _id: "DEBUG" },
-        isAccountOnly: true,
-        createdAt: new Date()
-      }
-    ]);
+    // Combine both: New account registrations + Created but unapproved profiles
+    res.json([...pendingProfiles, ...formattedAccounts]);
   } catch (error) {
     console.error("Fetch Pending Restaurants Error:", error);
     res.status(500).json({ message: "Server Error" });
@@ -105,6 +96,43 @@ exports.approveRestaurant = async (req, res) => {
     return res.status(404).json({ message: "Restaurant or User not found" });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.rejectRestaurant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isAccountOnly } = req.query;
+
+    if (isAccountOnly === "true") {
+      // Delete the user account directly
+      await User.findByIdAndDelete(id);
+      return res.json({ message: "Restaurant Registration Rejected and Account Deleted" });
+    }
+
+    // If it's a restaurant profile, delete the profile and the owner account
+    const restaurant = await Restaurant.findById(id);
+    if (restaurant) {
+      await User.findByIdAndDelete(restaurant.owner);
+      await MenuItem.deleteMany({ restaurant: id });
+      await Restaurant.findByIdAndDelete(id);
+    }
+    
+    res.json({ message: "Restaurant Profile and Owner Account Deleted" });
+  } catch (error) {
+    console.error("Reject Restaurant Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.rejectAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await User.findByIdAndDelete(id);
+    res.json({ message: "Delivery Agent Application Rejected and Account Deleted" });
+  } catch (error) {
+    console.error("Reject Agent Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };

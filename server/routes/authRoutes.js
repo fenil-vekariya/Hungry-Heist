@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { body, validationResult } = require("../middleware/validator");
-const { register, login, getProfile, updateProfile, updateAddress } = require("../controllers/authController");
+const { register, login, getProfile, updateProfile, updateAddress, forgotPassword, resetPassword } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const handleValidation = (req, res, next) => {
@@ -111,6 +111,8 @@ const updateAddressValidation = [
 
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 router.get("/profile", authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfileValidation, updateProfile);

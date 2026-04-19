@@ -23,7 +23,9 @@ const userSchema = new mongoose.Schema({
     totalEarnings: { type: Number, default: 0 },
     outstandingBalance: { type: Number, default: 0 },
     isBlocked: { type: Boolean, default: false },
-    isApproved: { type: Boolean, default: false }
+    isApproved: { type: Boolean, default: false },
+    resetToken: { type: String, default: null },
+    resetTokenExpire: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

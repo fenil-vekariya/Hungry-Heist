@@ -15,10 +15,12 @@ const {
   deleteOrderAdmin,
   getPendingRestaurants,
   approveRestaurant,
+  rejectRestaurant,
   approveUser,
   getAllDeliveryAgents,
   getPendingDeliveryAgents,
   approveDeliveryAgent,
+  rejectAgent,
   assignAgentToOrder
 } = require("../controllers/adminController");
 
@@ -112,6 +114,20 @@ router.put(
   authMiddleware,
   roleMiddleware(["admin"]),
   approveDeliveryAgent
+);
+
+router.delete(
+  "/delivery-agents/reject/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  rejectAgent
+);
+
+router.delete(
+  "/reject/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  rejectRestaurant
 );
 
 router.post(
