@@ -114,7 +114,7 @@ function AdminDashboard() {
   const rejectAgent = async (id) => {
     if (!window.confirm("Are you sure you want to REJECT and PERMANENTLY DELETE this delivery agent application?")) return;
     try {
-      await API.delete(`/admin/user/${id}`);
+      await API.delete(`/admin/delivery-agents/reject/${id}`);
       fetchPendingAgents();
       fetchDeliveryAgents();
       fetchStats();
@@ -239,11 +239,7 @@ function AdminDashboard() {
       
     if (!window.confirm(message)) return;
     try {
-      if (isAccountOnly) {
-        await API.delete(`/admin/user/${id}`);
-      } else {
-        await API.delete(`/admin/restaurant/${id}`);
-      }
+      await API.delete(`/admin/reject/${id}?isAccountOnly=${isAccountOnly}`);
       fetchPendingRestaurants();
       fetchRestaurants();
       fetchStats();
@@ -382,9 +378,6 @@ function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Restaurant Queue */}
           <div>
-            <div className="mb-2 p-2 bg-yellow-100 text-yellow-800 text-xs font-mono break-all border border-yellow-300">
-              DEBUG /admin/pending: {JSON.stringify(pendingRestaurants)}
-            </div>
             <h3 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
               <i className="fa-solid fa-store text-brand-orange"></i>
               Restaurant Queue ({pendingRestaurants.length})

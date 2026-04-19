@@ -18,12 +18,15 @@ import { useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./Pages/Profile";
 import Checkout from "./Pages/Checkout";
+import ForgotPassword from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
+
 
 function App() {
   const location = useLocation();
   const { initialising } = useAuth();
 
-  const hiddenRoutes = ["/", "/login", "/register"];
+  const hiddenRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
   const hideNavbar = hiddenRoutes.includes(location.pathname);
 
   if (initialising) {
@@ -38,6 +41,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route
             path="/restaurants"
             element={

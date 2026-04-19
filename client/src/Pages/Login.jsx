@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import BackButton from "../components/BackButton";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -116,6 +118,14 @@ function Login() {
                 <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
               </button>
             </div>
+            <div className="flex justify-end mt-2">
+              <Link
+                to="/forgot-password"
+                className="text-[10px] font-black text-gray-400 hover:text-orange-500 uppercase tracking-widest transition-all"
+              >
+                Forgot Password?
+              </Link>
+            </div>
           </div>
 
           {error && (
@@ -142,6 +152,47 @@ function Login() {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 flex flex-col items-center gap-4">
+          <div className="relative w-full flex items-center justify-center">
+            <div className="border-t border-gray-100 w-full"></div>
+            <span className="bg-white px-3 text-gray-400 text-[10px] uppercase font-bold tracking-widest absolute">Or continue with</span>
+          </div>
+          
+          <div className="w-full flex justify-center pt-2">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                try {
+                  const decoded = jwtDecode(credentialResponse.credential);
+                  console.log("Google Login Success:", decoded);
+                  
+                  // For now, we simulate a login with a "customer" role
+                  // In a real app, you would send the token to your backend to verify
+                  login({ 
+                    token: credentialResponse.credential, 
+                    role: "customer",
+                    name: decoded.name,
+                    email: decoded.email
+                  });
+                  
+                  navigate("/menu");
+                } catch (err) {
+                  console.error("Token decode error:", err);
+                  setError("Failed to process Google login.");
+                }
+              }}
+              onError={() => {
+                console.log('Login Failed');
+                setError("Google Sign-In failed. Please try again.");
+              }}
+              useOneTap
+              theme="outline"
+              shape="pill"
+              size="large"
+              width="100%"
+            />
+          </div>
+        </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
             <p className="text-gray-500 text-sm font-medium">
