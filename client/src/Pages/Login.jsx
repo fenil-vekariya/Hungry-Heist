@@ -161,24 +161,25 @@ function Login() {
           
           <div className="w-full flex justify-center pt-2">
             <GoogleLogin
-              onSuccess={(credentialResponse) => {
+              onSuccess={async (credentialResponse) => {
                 try {
-                  const decoded = jwtDecode(credentialResponse.credential);
-                  console.log("Google Login Success:", decoded);
+                  // 1. Send Google credential to your backend
+                  const res = await API.post("/auth/google-login", {
+                    credential: credentialResponse.credential
+                  });
+
+                  console.log("Google Login Success (Server):", res.data);
                   
-                  // For now, we simulate a login with a "customer" role
-                  // In a real app, you would send the token to your backend to verify
+                  // 2. Use the LOCAL token returned by your server
                   login({ 
-                    token: credentialResponse.credential, 
-                    role: "customer",
-                    name: decoded.name,
-                    email: decoded.email
+                    token: res.data.token, 
+                    role: res.data.role
                   });
                   
                   navigate("/menu");
                 } catch (err) {
-                  console.error("Token decode error:", err);
-                  setError("Failed to process Google login.");
+                  console.error("Google Server Login Error:", err);
+                  setError(err.response?.data?.message || "Failed to authenticate with Google.");
                 }
               }}
               onError={() => {

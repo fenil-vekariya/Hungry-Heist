@@ -186,8 +186,8 @@ exports.forgotPassword = async (req, res) => {
 
     res.json({ message: "Reset link sent to your email" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server Error sending email" });
+    console.error("NODEMAILER ERROR:", error);
+    res.status(500).json({ message: `Server Error: ${error.message}` });
   }
 };
 
@@ -214,5 +214,49 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error resetting password" });
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: "Google credential is required" });
+    }
+
+    const jwt = require("jsonwebtoken");
+    const decoded = jwt.decode(credential);
+
+    if (!decoded || !decoded.email) {
+      return res.status(400).json({ message: "Invalid Google token" });
+    }
+
+    let user = await User.findOne({ email: decoded.email });
+
+    if (!user) {
+      user = new User({
+        name: decoded.name,
+        email: decoded.email,
+        password: await bcrypt.hash(Math.random().toString(36), 10),
+        role: "customer",
+        isApproved: true
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role, _id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      token,
+      role: user.role,
+      message: "Google login successful"
+    });
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    res.status(500).json({ message: "Server Error during Google login" });
   }
 };

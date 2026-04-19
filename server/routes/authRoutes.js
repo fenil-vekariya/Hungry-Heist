@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { body, validationResult } = require("../middleware/validator");
-const { register, login, getProfile, updateProfile, updateAddress, forgotPassword, resetPassword } = require("../controllers/authController");
+const { register, login, getProfile, updateProfile, updateAddress, forgotPassword, resetPassword, googleLogin } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const handleValidation = (req, res, next) => {
@@ -109,10 +109,15 @@ const updateAddressValidation = [
   handleValidation
 ];
 
+const forgotPasswordValidation = [body("email"), handleValidation];
+const resetPasswordValidation = [body("password"), handleValidation];
+const googleLoginValidation = [body("credential"), handleValidation];
+
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
+router.post("/forgot-password", forgotPasswordValidation, forgotPassword);
+router.post("/reset-password/:token", resetPasswordValidation, resetPassword);
+router.post("/google-login", googleLoginValidation, googleLogin);
 
 router.get("/profile", authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfileValidation, updateProfile);

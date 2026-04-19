@@ -26,8 +26,8 @@ function App() {
   const location = useLocation();
   const { initialising } = useAuth();
 
-  const hiddenRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
-  const hideNavbar = hiddenRoutes.includes(location.pathname);
+  const hiddenRoutes = ["/", "/login", "/register", "/forgot-password"];
+  const hideNavbar = hiddenRoutes.includes(location.pathname) || location.pathname.startsWith("/reset-password/");
 
   if (initialising) {
     return null;
