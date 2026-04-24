@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Home() {
@@ -15,29 +15,6 @@ function Home() {
     }
   }, [isAuthenticated, role, navigate]);
 
-  const foodItems = [
-    {
-      id: 1,
-      name: "Signature Heist Burger",
-      price: "₹299",
-      description: "Gourmet beef patty with secret heist sauce.",
-      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 2,
-      name: "Pepperoni Overload",
-      price: "₹450",
-      description: "Classical pepperoni with wood-fired crust.",
-      image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 3,
-      name: "Creamy Chicken Alfredo",
-      price: "₹380",
-      description: "Silky smooth pasta with grilled chicken.",
-      image: "https://images.unsplash.com/photo-1555949258-eb6731ef0e67?auto=format&fit=crop&q=80&w=800"
-    }
-  ];
 
   const handleExplore = () => {
     if (isAuthenticated) {
@@ -101,7 +78,7 @@ function Home() {
       </header>
 
       {/* 3. FEATURES SECTION */}
-      <section className="py-16 px-6 bg-white">
+      <section id="features" className="py-16 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-gray-50 p-8 rounded-xl shadow-md text-center hover:-translate-y-2 transition-transform">
@@ -129,31 +106,44 @@ function Home() {
         </div>
       </section>
 
-      {/* 4. FOOD PREVIEW SECTION */}
-      <section className="py-20 px-6 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-800 mb-10 text-center">Trending <span className="text-orange-500">Choices</span></h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {foodItems.map(item => (
-            <div key={item.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow group border border-gray-100">
-              <div className="h-56 overflow-hidden relative">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full font-bold text-orange-500 shadow-sm">
-                  {item.price}
-                </div>
+      {/* 4. HOW IT WORKS SECTION */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-4xl font-extrabold text-gray-800 mb-16">How It <span className="text-orange-500">Works</span></h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {/* Step 1 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mb-6 shadow-lg">
+                1
               </div>
-              <div className="p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-2 truncate">{item.name}</h4>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
-                <div className="flex items-center gap-1 text-orange-300">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Create an Account</h3>
+              <p className="text-gray-500 max-w-xs mx-auto">
+                Sign up quickly and set up your profile to get started.
+              </p>
             </div>
-          ))}
+
+            {/* Step 2 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mb-6 shadow-lg">
+                2
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Browse & Order</h3>
+              <p className="text-gray-500 max-w-xs mx-auto">
+                Choose your favorite food from restaurants and order easily.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mb-6 shadow-lg">
+                3
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Wait & Enjoy</h3>
+              <p className="text-gray-500 max-w-xs mx-auto">
+                Get your food delivered hot and fresh at your door.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -167,9 +157,9 @@ function Home() {
             <span className="font-bold text-gray-800">Hungry Heist</span>
           </div>
           <div className="flex justify-center gap-8 mb-8">
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition-colors">About Us</a>
+            <a href="#features" className="text-gray-400 hover:text-orange-500 transition-colors">About Us</a>
             <a href="#" className="text-gray-400 hover:text-orange-500 transition-colors">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition-colors">Contact</a>
+            <Link to="/rate-us" className="text-gray-400 hover:text-orange-500 transition-colors">Contact</Link>
           </div>
           <p className="text-sm text-gray-400">© 2026 Hungry Heist. All rights reserved.</p>
         </div>

@@ -9,7 +9,7 @@ exports.placeOrder = async (req, res) => {
     const itemsArray = Array.isArray(items) ? items : JSON.parse(items);
     const restaurantRef = restaurantId || restaurant;
     const selectedPaymentMethod = paymentMethod || "COD";
-    const paymentStatus = "Unpaid";
+    const paymentStatus = selectedPaymentMethod === "Online" ? "Pending" : "Unpaid";
 
     // Anti-Abuse Check: Limit to 3 FREE cancellations per 24 hours
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);

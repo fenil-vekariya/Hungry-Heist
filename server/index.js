@@ -7,6 +7,7 @@ const deliveryAgentRoutes = require("./routes/AgentRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -32,6 +33,7 @@ app.use("/api/delivery-agent", deliveryAgentRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hungry Heist API Running");

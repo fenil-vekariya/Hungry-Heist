@@ -414,3 +414,46 @@ exports.approveUser = async (req, res) => {
     res.status(500).json({ message: "Error approving user" });
   }
 };
+
+exports.getRevenueAnalytics = async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - days);
+
+    const revenueData = await Order.aggregate([
+      {
+        $match: {
+          status: { $regex: /^Completed$/i },
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Fill in missing dates with 0 revenue for a smoother chart
+    const result = [];
+    for (let i = 0; i <= days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split("T")[0];
+      const match = revenueData.find(item => item._id === dateStr);
+      result.push({
+        date: dateStr,
+        revenue: match ? match.revenue : 0
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error("Revenue Analytics Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

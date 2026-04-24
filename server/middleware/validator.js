@@ -24,7 +24,7 @@ const body = (field) => {
       }
     }
 
-    if (req.path.includes("login")) {
+    if (req.path.includes("login") && !req.path.includes("google-login")) {
       if (!email || !password) {
         return res.status(400).json({ message: "Please fill up all the blanks" });
       }

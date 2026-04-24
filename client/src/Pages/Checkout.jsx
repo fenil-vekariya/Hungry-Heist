@@ -13,6 +13,7 @@ function Checkout() {
     const [userAddress, setUserAddress] = useState(null);
     const [outstandingBalance, setOutstandingBalance] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [paymentMethod, setPaymentMethod] = useState("COD");
 
     const deliveryCharge = total >= 199 ? 0 : 30;
     const grandTotal = total + deliveryCharge + outstandingBalance;
@@ -44,6 +45,20 @@ function Checkout() {
     }, [itemCount, navigate]);
 
 
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     const handlePlaceOrder = async () => {
         if (!userAddress) {
             alert("Please add an address before placing an order.");
@@ -51,21 +66,79 @@ function Checkout() {
         }
         
         try {
-            await API.post("/order/place", {
+            const orderRes = await API.post("/order/place", {
                 restaurant: restaurantId,
                 items: items.map((i) => ({
                     menuItem: i.menuItem,
                     quantity: i.quantity,
                 })),
-                paymentMethod: "COD",
+                paymentMethod: paymentMethod,
                 deliveryAddress: [userAddress.flat, userAddress.building, userAddress.area, userAddress.town, userAddress.city]
                     .filter(part => part && part.trim() !== "")
                     .join(", ")
             });
 
-            alert("Order Placed Successfully!");
-            clear();
-            navigate("/my-orders");
+            const systemOrderId = orderRes.data.order._id;
+
+            if (paymentMethod === "Online") {
+                const isLoaded = await loadRazorpayScript();
+                if (!isLoaded) {
+                    alert("Failed to load Razorpay SDK. Please check your connection.");
+                    return;
+                }
+                // Razorpay Flow
+                const paymentRes = await API.post("/payment/create-order", {
+                    amount: grandTotal,
+                    orderId: systemOrderId
+                });
+
+                const { razorpayOrderId, amount, currency } = paymentRes.data;
+
+                const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use test key from .env
+                    amount: amount,
+                    currency: currency,
+                    name: "Hungry Heist",
+                    description: "Food Delivery Order",
+                    order_id: razorpayOrderId,
+                    handler: async function (response) {
+                        try {
+                            await API.post("/payment/verify", {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderId: systemOrderId
+                            });
+                            alert("Payment Successful!");
+                            clear();
+                            navigate("/my-orders");
+                        } catch (verifyErr) {
+                            console.error("Payment Verification Failed", verifyErr);
+                            alert("Payment verification failed. Your order is pending.");
+                            navigate("/my-orders");
+                        }
+                    },
+                    prefill: {
+                        name: "Customer",
+                    },
+                    theme: {
+                        color: "#f97316"
+                    }
+                };
+                
+                const rzp = new window.Razorpay(options);
+                rzp.on('payment.failed', function (response){
+                    console.error(response.error.description);
+                    alert("Payment Failed. Your order is pending.");
+                    navigate("/my-orders");
+                });
+                rzp.open();
+            } else {
+                // COD Flow
+                alert("Order Placed Successfully!");
+                clear();
+                navigate("/my-orders");
+            }
         } catch (err) {
             console.log(err);
             alert("Failed to place order.");
@@ -138,13 +211,42 @@ function Checkout() {
                             </div>
                         </Card>
 
-                        <Card className="p-8 md:p-10 border-none bg-white shadow-md flex items-center gap-6">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
-                                <i className="fa-solid fa-wallet text-xl"></i>
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="font-extrabold text-gray-900 text-lg leading-none mb-1">Cash on Delivery</h4>
-                                <p className="text-orange-600/70 text-[10px] font-black uppercase tracking-widest leading-none">Safe & Secure checkout</p>
+                        <Card className="p-8 md:p-10 border-none bg-white shadow-md">
+                            <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                                <i className="fa-solid fa-wallet text-orange-500"></i> Payment Method
+                            </h3>
+                            <div className="space-y-4">
+                                <label className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === "Online" ? "border-orange-500 bg-orange-50" : "border-gray-100 bg-white"}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="paymentMethod" 
+                                        value="Online" 
+                                        checked={paymentMethod === "Online"} 
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="w-5 h-5 text-orange-500 focus:ring-orange-500 border-gray-300"
+                                    />
+                                    <div className="flex-1">
+                                        <h4 className="font-extrabold text-gray-900 leading-none mb-1">Pay Online (Razorpay)</h4>
+                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest leading-none">Credit/Debit, UPI, NetBanking</p>
+                                    </div>
+                                    <i className="fa-brands fa-cc-visa text-2xl text-gray-400"></i>
+                                </label>
+                                
+                                <label className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === "COD" ? "border-orange-500 bg-orange-50" : "border-gray-100 bg-white"}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="paymentMethod" 
+                                        value="COD" 
+                                        checked={paymentMethod === "COD"} 
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="w-5 h-5 text-orange-500 focus:ring-orange-500 border-gray-300"
+                                    />
+                                    <div className="flex-1">
+                                        <h4 className="font-extrabold text-gray-900 leading-none mb-1">Cash on Delivery</h4>
+                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest leading-none">Pay at your doorstep</p>
+                                    </div>
+                                    <i className="fa-solid fa-money-bill-wave text-xl text-gray-400"></i>
+                                </label>
                             </div>
                         </Card>
                     </div>
