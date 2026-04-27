@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
+import API, { getBackendURL } from "../services/api";
 import Button from "../components/Button";
 
 function RestaurantProfile() {
@@ -358,7 +358,7 @@ function RestaurantProfile() {
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-6 hover:border-orange-400 transition-colors group cursor-pointer relative overflow-hidden">
                 {previewUrl ? (
                     <img 
-                       src={previewUrl.startsWith("blob:") || previewUrl.startsWith("http") ? previewUrl : `http://localhost:5000/${previewUrl.replace(/\\/g, '/')}`} 
+                       src={previewUrl.startsWith("blob:") || previewUrl.startsWith("http") ? previewUrl : `${getBackendURL()}/${previewUrl.replace(/\\/g, '/')}`} 
                        onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(formData?.restaurantName || "Preview")}`; }} 
                        alt="Preview" 
                        className="w-full h-40 object-cover rounded-xl" 

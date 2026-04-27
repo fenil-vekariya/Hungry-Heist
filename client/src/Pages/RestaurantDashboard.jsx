@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../services/api";
+import API, { getBackendURL } from "../services/api";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import CancelOrderModal from "../components/CancelOrderModal";
@@ -462,7 +462,7 @@ function RestaurantDashboard() {
             <div className="shrink-0 mx-auto md:mx-0">
               {profile.image ? (
                 <img 
-                  src={profile.image.startsWith("http") ? profile.image : `http://localhost:5000/${profile.image.replace(/\\/g, '/')}`} 
+                  src={profile.image.startsWith("http") ? profile.image : `${getBackendURL()}/${profile.image.replace(/\\/g, '/')}`} 
                   onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(profile?.name || "Restaurant")}`; }} 
                   alt="Logo" 
                   className="w-32 h-32 rounded-3xl object-cover shadow-lg border-4 border-white" 
@@ -656,7 +656,7 @@ function RestaurantDashboard() {
             <div className="h-40 overflow-hidden relative">
               {item.image ? (
                 <img 
-                  src={item.image.startsWith("http") ? item.image : `http://localhost:5000/${item.image.replace(/\\/g, '/')}`} 
+                  src={item.image.startsWith("http") ? item.image : `${getBackendURL()}/${item.image.replace(/\\/g, '/')}`} 
                   onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(item.name)}`; }} 
                   alt={item.name} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 

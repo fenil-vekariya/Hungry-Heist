@@ -13,8 +13,7 @@ exports.addMenuItem = async (req, res) => {
 
     let imageUrl = "";
     if (req.file) {
-      // Store relative path for cross-environment compatibility
-      imageUrl = `uploads/${req.file.filename}`;
+      imageUrl = req.file.path.startsWith("http") ? req.file.path : `uploads/${req.file.filename}`;
     }
 
     const menuItem = new MenuItem({
@@ -66,8 +65,7 @@ exports.updateMenuItem = async (req, res) => {
     if (category) menuItem.category = category;
 
     if (req.file) {
-      // Store relative path for cross-environment compatibility
-      menuItem.image = `uploads/${req.file.filename}`;
+      menuItem.image = req.file.path.startsWith("http") ? req.file.path : `uploads/${req.file.filename}`;
     }
 
     await menuItem.save();

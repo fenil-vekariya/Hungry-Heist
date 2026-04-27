@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 
 function RateUs() {
+    const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const [formData, setFormData] = useState({
         user: "",
@@ -56,6 +58,14 @@ function RateUs() {
     return (
         <div className="min-h-screen bg-[#fcfcfc] pt-8 pb-20">
             <div className="max-w-xl mx-auto px-6">
+                <button 
+                    onClick={() => navigate(-1)}
+                    className="mb-6 flex items-center gap-2 text-gray-500 hover:text-brand-orange transition-colors font-bold group"
+                >
+                    <i className="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i>
+                    Go Back
+                </button>
+
                 <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-gray-100 shadow-premium">
                     <div className="flex flex-col items-center text-center mb-6">
                         <div className="w-16 h-16 bg-brand-orange/10 rounded-2xl flex items-center justify-center text-brand-orange mb-6">

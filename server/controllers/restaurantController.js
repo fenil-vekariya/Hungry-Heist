@@ -20,11 +20,11 @@ exports.createRestaurant = async (req, res) => {
     let bannerUrl;
 
     if (req.files && req.files.image && req.files.image[0]) {
-      imageUrl = `uploads/${req.files.image[0].filename}`;
+      imageUrl = req.files.image[0].path.startsWith("http") ? req.files.image[0].path : `uploads/${req.files.image[0].filename}`;
     }
 
     if (req.files && req.files.banner && req.files.banner[0]) {
-      bannerUrl = `uploads/${req.files.banner[0].filename}`;
+      bannerUrl = req.files.banner[0].path.startsWith("http") ? req.files.banner[0].path : `uploads/${req.files.banner[0].filename}`;
     }
 
     const restaurant = new Restaurant({
@@ -90,11 +90,11 @@ exports.updateRestaurant = async (req, res) => {
     if (deliveryCharge !== undefined) restaurant.deliveryCharge = Number(deliveryCharge);
 
     if (req.files && req.files.image && req.files.image[0]) {
-      restaurant.image = `uploads/${req.files.image[0].filename}`;
+      restaurant.image = req.files.image[0].path.startsWith("http") ? req.files.image[0].path : `uploads/${req.files.image[0].filename}`;
     }
 
     if (req.files && req.files.banner && req.files.banner[0]) {
-      restaurant.banner = `uploads/${req.files.banner[0].filename}`;
+      restaurant.banner = req.files.banner[0].path.startsWith("http") ? req.files.banner[0].path : `uploads/${req.files.banner[0].filename}`;
     }
 
     await restaurant.save();

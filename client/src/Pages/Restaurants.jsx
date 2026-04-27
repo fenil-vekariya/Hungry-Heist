@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
+import API, { getBackendURL } from "../services/api";
 import Card from "../components/Card";
 
 function Restaurants() {
@@ -67,7 +67,7 @@ function Restaurants() {
               <div className="relative h-56 shrink-0 overflow-hidden">
                 {r.image ? (
                   <img
-                    src={r.image.startsWith("http") ? r.image : `http://localhost:5000/${r.image.replace(/\\/g, '/')}`}
+                    src={r.image.startsWith("http") ? r.image : `${getBackendURL()}/${r.image.replace(/\\/g, '/')}`}
                     onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/e2e8f0/1e293b?text=${encodeURIComponent(r.name)}`; }}
                     alt={r.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
