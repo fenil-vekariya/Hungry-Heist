@@ -3,6 +3,43 @@ const Restaurant = require("../models/Restaurant");
 const MenuItem = require("../models/MenuItem");
 const User = require("../models/User");
 
+const calculateOrderCharges = (subtotal, distanceKm) => {
+  let deliveryFeeCustomer = 25;
+  if (subtotal >= 300) deliveryFeeCustomer = 0;
+  else if (subtotal >= 150) deliveryFeeCustomer = 15;
+
+  const handlingFee = 5;
+  const tax = Math.round(subtotal * 0.05);
+  const totalAmount = subtotal + tax + deliveryFeeCustomer + handlingFee;
+
+  const commissionAmount = Math.round(subtotal * 0.10);
+  const restaurantEarning = subtotal - commissionAmount;
+
+  let agentEarning = 25;
+  if (distanceKm > 2) {
+    agentEarning += (distanceKm - 2) * 5;
+  }
+
+  let adminSubsidy = 0;
+  if (agentEarning > deliveryFeeCustomer) {
+      adminSubsidy = agentEarning - deliveryFeeCustomer;
+  }
+  
+  const adminEarning = commissionAmount + handlingFee - adminSubsidy;
+
+  return {
+    deliveryFeeCustomer,
+    handlingFee,
+    tax,
+    totalAmount,
+    commissionAmount,
+    restaurantEarning,
+    agentEarning,
+    adminSubsidy,
+    adminEarning
+  };
+};
+
 exports.placeOrder = async (req, res) => {
   try {
     const { restaurantId, restaurant, items, paymentMethod } = req.body;
@@ -16,14 +53,14 @@ exports.placeOrder = async (req, res) => {
     const recentFreeCancellations = await Order.countDocuments({
       customer: req.user._id,
       status: "Cancelled",
-      cancelledBy: req.user._id, 
+      cancelledBy: req.user._id,
       cancellationFee: 0, // Only count free ones for the limit
       updatedAt: { $gte: last24Hours }
     });
 
     if (recentFreeCancellations >= 3) {
-      return res.status(429).json({ 
-        message: "You have reached your free cancellation limit (3 per 24h). Please try again later or pay any outstanding fees to continue." 
+      return res.status(429).json({
+        message: "You have reached your free cancellation limit (3 per 24h). Please try again later or pay any outstanding fees to continue."
       });
     }
 
@@ -38,19 +75,27 @@ exports.placeOrder = async (req, res) => {
       baseTotal += menu.price * item.quantity;
     }
 
-    const TAX_RATE = 0.05;
-    const DELIVERY_THRESHOLD = 199;
-    const DELIVERY_CHARGE = baseTotal >= DELIVERY_THRESHOLD ? 0 : 30;
-    const tax = Math.round(baseTotal * TAX_RATE);
-    const totalAmount = baseTotal + tax + DELIVERY_CHARGE + outstandingFee;
-    const partnerEarning = Math.round((baseTotal + tax + DELIVERY_CHARGE) * 0.1);
+    const distanceKm = req.body.distanceKm || 2; 
+    const charges = calculateOrderCharges(baseTotal, distanceKm);
+    
+    const finalTotalAmount = charges.totalAmount + outstandingFee;
 
     const order = new Order({
       customer: req.user._id,
       restaurant: restaurantRef,
       items: itemsArray,
-      totalAmount,
-      agentEarning: partnerEarning,
+      subtotal: baseTotal,
+      tax: charges.tax,
+      distanceKm,
+      deliveryFeeCustomer: charges.deliveryFeeCustomer,
+      handlingFee: charges.handlingFee,
+      commissionRate: 0.10,
+      commissionAmount: charges.commissionAmount,
+      restaurantEarning: charges.restaurantEarning,
+      adminEarning: charges.adminEarning,
+      agentEarning: charges.agentEarning,
+      adminSubsidy: charges.adminSubsidy,
+      totalAmount: finalTotalAmount,
       paymentMethod: selectedPaymentMethod,
       paymentStatus,
       deliveryAddress: req.body.deliveryAddress || [user.address.flat, user.address.building, user.address.area, user.address.town, user.address.city]
@@ -208,7 +253,7 @@ exports.updateOrderStatus = async (req, res) => {
     // Cleanup for Completion or Cancellation
     if (status === "Completed" || status === "Cancelled") {
       if (status === "Completed" && order.paymentMethod === "COD") order.paymentStatus = "Paid";
-      
+
       if (status === "Cancelled") {
         order.cancellationReason = req.body.reason || "No specific reason provided";
         order.cancelledBy = req.user._id;
@@ -219,18 +264,18 @@ exports.updateOrderStatus = async (req, res) => {
           const isWithinGracePeriod = timeDiff <= 60000;
 
           if (!isWithinGracePeriod && order.status !== "Pending") {
-             order.cancellationFee = order.totalAmount;
-             await User.findByIdAndUpdate(req.user._id, { $inc: { outstandingBalance: order.totalAmount } });
+            order.cancellationFee = order.totalAmount;
+            await User.findByIdAndUpdate(req.user._id, { $inc: { outstandingBalance: order.totalAmount } });
           } else {
-             order.cancellationFee = 0;
+            order.cancellationFee = 0;
           }
         }
       }
 
       // Free up agent if one was assigned
       if (order.deliveryAgent) {
-        await User.findByIdAndUpdate(order.deliveryAgent, { 
-          currentOrder: null, 
+        await User.findByIdAndUpdate(order.deliveryAgent, {
+          currentOrder: null,
           isAvailable: true
         });
       }

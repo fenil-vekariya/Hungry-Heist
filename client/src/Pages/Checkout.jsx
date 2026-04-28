@@ -15,8 +15,18 @@ function Checkout() {
     const [loading, setLoading] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState("COD");
 
-    const deliveryCharge = total >= 199 ? 0 : 30;
-    const grandTotal = total + deliveryCharge + outstandingBalance;
+    // Inline Address Form State
+    const [newAddress, setNewAddress] = useState({
+        flat: "", building: "", area: "", town: "", city: "", state: "", pin: ""
+    });
+    const [savingAddress, setSavingAddress] = useState(false);
+
+    let deliveryCharge = 25;
+    if (total >= 300) deliveryCharge = 0;
+    else if (total >= 150) deliveryCharge = 15;
+    const tax = Math.round(total * 0.05);
+    const handlingFee = 5;
+    const grandTotal = total + tax + deliveryCharge + handlingFee + outstandingBalance;
 
     useEffect(() => {
         if (itemCount === 0) {
@@ -43,6 +53,23 @@ function Checkout() {
 
         fetchAddress();
     }, [itemCount, navigate]);
+
+    const handleSaveAddress = async () => {
+        if (!newAddress.flat || !newAddress.area || !newAddress.city || !newAddress.pin) {
+            alert("Please fill in Flat, Area, City, and Pincode.");
+            return;
+        }
+        setSavingAddress(true);
+        try {
+            const res = await API.put("/auth/address", newAddress);
+            setUserAddress(res.data.address);
+        } catch (err) {
+            console.error("Failed to save address", err);
+            alert("Failed to save address. Please try again.");
+        } finally {
+            setSavingAddress(false);
+        }
+    };
 
 
     const loadRazorpayScript = () => {
@@ -200,12 +227,32 @@ function Checkout() {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-6">
-                                        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
-                                            <i className="fa-solid fa-triangle-exclamation"></i>
+                                    <div className="py-2">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-lg">
+                                                <i className="fa-solid fa-triangle-exclamation"></i>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-extrabold text-gray-900 leading-none mb-1">No Delivery Address Found</h4>
+                                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest leading-none">Please add an address to continue</p>
+                                            </div>
                                         </div>
-                                        <p className="text-red-600 font-black text-sm uppercase tracking-widest mb-4">No Delivery Address Found</p>
-                                        <Button onClick={() => navigate("/profile")} className="shadow-lg shadow-orange-500/20">Add Address in Profile</Button>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                            <input type="text" placeholder="Flat / House No. *" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.flat} onChange={(e) => setNewAddress({...newAddress, flat: e.target.value})} />
+                                            <input type="text" placeholder="Building / Apartment" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.building} onChange={(e) => setNewAddress({...newAddress, building: e.target.value})} />
+                                            <input type="text" placeholder="Area / Sector *" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.area} onChange={(e) => setNewAddress({...newAddress, area: e.target.value})} />
+                                            <input type="text" placeholder="Town / Landmark" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.town} onChange={(e) => setNewAddress({...newAddress, town: e.target.value})} />
+                                            <input type="text" placeholder="City *" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <input type="text" placeholder="State" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.state} onChange={(e) => setNewAddress({...newAddress, state: e.target.value})} />
+                                                <input type="text" placeholder="Pincode *" className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm" value={newAddress.pin} onChange={(e) => setNewAddress({...newAddress, pin: e.target.value.replace(/\D/g, '').slice(0,6)})} />
+                                            </div>
+                                        </div>
+                                        
+                                        <Button onClick={handleSaveAddress} disabled={savingAddress} className="w-full py-3 shadow-lg shadow-orange-500/20">
+                                            {savingAddress ? "Saving..." : "Save Address & Continue"}
+                                        </Button>
                                     </div>
                                 )}
                             </div>
@@ -289,6 +336,14 @@ function Checkout() {
                                     <span className="text-gray-900">{formatPrice(total)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
+                                    <span>Tax (5%)</span>
+                                    <span className="text-gray-900">{formatPrice(tax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
+                                    <span>Handling Fee</span>
+                                    <span className="text-gray-900">{formatPrice(handlingFee)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-xs font-black uppercase tracking-widest">
                                     <span>Delivery Charges</span>
                                     <span className={deliveryCharge === 0 ? "text-green-500 font-black" : "text-gray-900"}>
                                         {deliveryCharge === 0 ? "FREE" : formatPrice(deliveryCharge)}
@@ -310,7 +365,7 @@ function Checkout() {
                                     <p className="text-[9px] text-orange-600 font-bold uppercase tracking-widest leading-none">
                                         {outstandingBalance > 0 
                                             ? `Fee from previous late cancellation included.` 
-                                            : `Free delivery applies to orders above ${formatPrice(199)}`}
+                                            : `Free delivery applies to orders above ${formatPrice(300)}`}
                                     </p>
                                 </div>
                                     <div className="flex justify-between items-end pt-4 mt-2">
@@ -318,9 +373,6 @@ function Checkout() {
                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Grand Total</span>
                                             <span className="text-4xl font-black text-gray-900 tracking-tighter leading-none">{formatPrice(grandTotal)}</span>
                                         </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[9px] font-black text-green-500 uppercase tracking-widest leading-none bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20 mb-1">Free GST</span>
-                                    </div>
                                 </div>
                             </div>
 

@@ -862,6 +862,90 @@ function AdminDashboard() {
     );
   };
 
+  const renderTransactionsTab = () => {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-2xl font-extrabold text-gray-800 mb-8 border-b border-gray-100 pb-4">Financial Ledger</h2>
+        {loading && (
+          <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold border border-blue-100 flex items-center gap-2 animate-pulse">
+            <i className="fa-solid fa-spinner fa-spin text-sm"></i> Syncing financial ledger...
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {orders.map((order) => (
+            <div key={order._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+              <div className="bg-gray-50 p-4 border-b border-gray-100 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">System ID</p>
+                  <p className="text-xs font-mono font-bold text-gray-800">#{order._id.slice(-8)}</p>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                    order.paymentStatus === "Paid" ? "bg-green-100 text-green-700" :
+                    order.paymentStatus === "Failed" ? "bg-red-100 text-red-700" :
+                    "bg-yellow-100 text-yellow-700"
+                  }`}>
+                  {order.paymentStatus}
+                </div>
+              </div>
+
+              <div className="p-5 flex-1 flex flex-col">
+                <div className="mb-5">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Payment Method</p>
+                  <div className="flex items-center gap-2">
+                    <i className={`fa-solid ${order.paymentMethod === "Online" ? "fa-credit-card text-blue-500" : "fa-money-bill-wave text-emerald-500"}`}></i>
+                    <span className="text-sm font-bold text-gray-800">{order.paymentMethod === "Online" ? "Razorpay Online" : "Cash on Delivery"}</span>
+                  </div>
+                  {order.paymentMethod === "Online" && order.paymentId && (
+                    <div className="mt-2 bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+                      <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-0.5">Gateway Transaction ID</p>
+                      <p className="text-[10px] font-mono text-blue-800 break-all">{order.paymentId}</p>
+                    </div>
+                  )}
+                  {order.paymentMethod === "Online" && !order.paymentId && order.paymentStatus !== "Paid" && (
+                    <div className="mt-2 bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+                      <p className="text-[8px] font-black text-yellow-600 uppercase tracking-widest mb-0.5">Gateway Info</p>
+                      <p className="text-[10px] text-yellow-700 font-medium">Pending or Failed Checkout</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-gray-100 mt-auto">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-tighter">Customer Paid</span>
+                    <span className="text-sm font-black text-gray-800">₹{order.totalAmount}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Platform Earned</p>
+                      <p className="text-sm font-black text-brand-orange mt-1">₹{order.adminEarning}</p>
+                    </div>
+                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Restaurant Earned</p>
+                      <p className="text-sm font-black text-green-600 mt-1">₹{order.restaurantEarning}</p>
+                    </div>
+                  </div>
+                  <div className="bg-indigo-50 p-2 rounded-lg border border-indigo-100 text-center">
+                      <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Agent Earned</p>
+                      <p className="text-sm font-black text-indigo-600 mt-1">₹{order.agentEarning}</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-50 text-right">
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">{new Date(order.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {orders.length === 0 && (
+            <div className="col-span-full py-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400">
+              No financial records available yet.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-4 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -906,6 +990,10 @@ function AdminDashboard() {
                 <i className={`fa-solid fa-bag-shopping w-5 ${activeTab === "orders" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Orders</span>
               </button>
+              <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "transactions" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("transactions")}>
+                <i className={`fa-solid fa-file-invoice-dollar w-5 ${activeTab === "transactions" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
+                <span>Transactions</span>
+              </button>
               <button className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === "categories" ? "bg-orange-100 text-brand-orange font-bold shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-brand-orange"}`} onClick={() => setActiveTab("categories")}>
                 <i className={`fa-solid fa-list-check w-5 ${activeTab === "categories" ? "text-brand-orange" : "text-gray-400 group-hover:text-brand-orange"}`}></i>
                 <span>Categories</span>
@@ -927,6 +1015,7 @@ function AdminDashboard() {
               {activeTab === "restaurants" && renderRestaurantsTab()}
               {activeTab === "deliveryAgents" && renderAgentsTab()}
               {activeTab === "orders" && renderOrdersTab()}
+              {activeTab === "transactions" && renderTransactionsTab()}
               {activeTab === "categories" && renderCategoriesTab()}
               {activeTab === "feedback" && renderFeedbackTab()}
               {activeTab === "reviews" && renderReviewsTab()}

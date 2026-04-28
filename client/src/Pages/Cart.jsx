@@ -30,6 +30,14 @@ function Cart() {
         );
     }
 
+    const subtotal = total;
+    const tax = Math.round(subtotal * 0.05);
+    let deliveryFee = 25;
+    if (subtotal >= 300) deliveryFee = 0;
+    else if (subtotal >= 150) deliveryFee = 15;
+    const handlingFee = 5;
+    const grandTotal = subtotal + tax + deliveryFee + handlingFee;
+
     return (
         <div className="min-h-screen bg-[#fcfcfc] pt-8 pb-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -130,23 +138,33 @@ function Cart() {
                                 </div>
                                 <div className="flex justify-between items-center text-gray-500 text-sm font-bold uppercase tracking-widest">
                                     <span>Subtotal</span>
-                                    <span className="text-gray-900 font-black">{formatPrice(total)}</span>
+                                    <span className="text-gray-900 font-black">{formatPrice(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-sm font-bold uppercase tracking-widest">
+                                    <span>Tax (5%)</span>
+                                    <span className="text-gray-900 font-black">{formatPrice(tax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-sm font-bold uppercase tracking-widest">
+                                    <span>Handling Fee</span>
+                                    <span className="text-gray-900 font-black">{formatPrice(handlingFee)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-gray-500 text-sm font-bold uppercase tracking-widest">
                                     <span>Delivery Fee</span>
-                                    {total >= 199 ? (
+                                    {deliveryFee === 0 ? (
                                         <span className="text-green-500 font-black flex items-center gap-1">
                                             <i className="fa-solid fa-bolt text-[10px]"></i> FREE
                                         </span>
                                     ) : (
-                                        <span className="text-gray-900 font-black">{formatPrice(30)}</span>
+                                        <span className="text-gray-900 font-black">{formatPrice(deliveryFee)}</span>
                                     )}
                                 </div>
-                                {total < 199 && (
+                                {deliveryFee > 0 && (
                                     <div className="flex items-center gap-2 bg-orange-50/50 px-3 py-2 rounded-xl border border-orange-100/50">
                                         <i className="fa-solid fa-circle-info text-orange-500 text-[10px]"></i>
                                         <p className="text-[9px] text-orange-700 font-bold uppercase tracking-widest leading-none flex-1">
-                                            Add {formatPrice(199 - total)} more for FREE delivery
+                                            {subtotal < 150 
+                                                ? `Add ${formatPrice(150 - subtotal)} more for ₹15 delivery` 
+                                                : `Add ${formatPrice(300 - subtotal)} more for FREE delivery`}
                                         </p>
                                     </div>
                                 )}
@@ -155,9 +173,9 @@ function Cart() {
                             <div className="mb-10">
                                 <div className="flex justify-between items-end mb-2">
                                     <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Grand Total</span>
-                                    <span className="text-4xl font-black text-gray-900 tracking-tighter">{formatPrice(total + (total >= 199 ? 0 : 30))}</span>
+                                    <span className="text-4xl font-black text-gray-900 tracking-tighter">{formatPrice(grandTotal)}</span>
                                 </div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-right">Taxes & Charges included</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-right">Final Amount</p>
                             </div>
 
                             <div className="space-y-4">

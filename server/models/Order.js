@@ -28,6 +28,61 @@ const orderSchema = new mongoose.Schema({
     }
   ],
 
+  subtotal: {
+    type: Number,
+    required: true
+  },
+
+  tax: {
+    type: Number,
+    default: 0
+  },
+
+  distanceKm: {
+    type: Number,
+    default: 1
+  },
+
+  deliveryFeeCustomer: {
+    type: Number,
+    default: 0
+  },
+
+  handlingFee: {
+    type: Number,
+    default: 5
+  },
+
+  commissionRate: {
+    type: Number,
+    default: 0.10
+  },
+
+  commissionAmount: {
+    type: Number,
+    default: 0
+  },
+
+  restaurantEarning: {
+    type: Number,
+    default: 0
+  },
+
+  agentEarning: {
+    type: Number,
+    default: 0
+  },
+
+  adminEarning: {
+    type: Number,
+    default: 0
+  },
+
+  adminSubsidy: {
+    type: Number,
+    default: 0
+  },
+
   totalAmount: {
     type: Number,
     required: true
@@ -37,11 +92,6 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     default: null
-  },
-
-  agentEarning: {
-    type: Number,
-    default: 0
   },
 
   paymentMethod: {
@@ -55,12 +105,12 @@ const orderSchema = new mongoose.Schema({
     enum: ["Paid", "Unpaid", "Pending", "Failed"],
     required: true
   },
-  
+
   paymentId: {
     type: String,
     default: null
   },
-  
+
   razorpayOrderId: {
     type: String,
     default: null

@@ -7,7 +7,7 @@ exports.createRestaurant = async (req, res) => {
     const { name, description, address, email, phone, category, cuisine, openingTime, closingTime, averagePrice, deliveryTime, deliveryCharge } = req.body;
 
     if (!req.user || !req.user._id) {
-       return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: "Authentication required" });
     }
 
     const existing = await Restaurant.findOne({ owner: req.user._id });
@@ -67,7 +67,7 @@ exports.updateRestaurant = async (req, res) => {
     const { name, description, address, email, phone, category, cuisine, openingTime, closingTime, averagePrice, deliveryTime, deliveryCharge } = req.body;
 
     if (!req.user || !req.user._id) {
-       return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: "Authentication required" });
     }
 
     const restaurant = await Restaurant.findOne({ owner: req.user._id });
@@ -138,18 +138,18 @@ exports.getRevenue = async (req, res) => {
       return res.status(404).json({ message: "Restaurant profile not found" });
     }
 
-    const completedOrders = await Order.find({ 
-      restaurant: restaurant._id, 
-      status: { $regex: /^(completed|Completed)$/ } 
+    const completedOrders = await Order.find({
+      restaurant: restaurant._id,
+      status: { $regex: /^(completed|Completed)$/ }
     });
 
     const totalRevenue = completedOrders.reduce((sum, order) => {
       return sum + (Number(order.totalAmount) || 0);
     }, 0);
 
-    res.json({ 
-      totalRevenue, 
-      completedCount: completedOrders.length 
+    res.json({
+      totalRevenue,
+      completedCount: completedOrders.length
     });
   } catch (error) {
     console.error("Get Revenue Error:", error);
@@ -166,10 +166,10 @@ exports.getAllRestaurants = async (req, res) => {
       restaurants.map(async (r) => {
         const reviews = await Review.find({ restaurant: r._id });
         const reviewCount = reviews.length;
-        const averageRating = reviewCount > 0 
-          ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount 
+        const averageRating = reviewCount > 0
+          ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount
           : 0;
-        
+
         return {
           ...r,
           averageRating: parseFloat(averageRating.toFixed(1)),
@@ -195,8 +195,8 @@ exports.getRestaurantById = async (req, res) => {
 
     const reviews = await Review.find({ restaurant: restaurant._id });
     const reviewCount = reviews.length;
-    const averageRating = reviewCount > 0 
-      ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount 
+    const averageRating = reviewCount > 0
+      ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount
       : 0;
 
     res.json({

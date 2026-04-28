@@ -186,11 +186,12 @@ function Login() {
                 console.log('Login Failed');
                 setError("Google Sign-In failed. Please try again.");
               }}
-              useOneTap
+              useOneTap={false}
+              use_fedcm_for_prompt={false}
               theme="outline"
               shape="pill"
               size="large"
-              width="100%"
+              width="300"
             />
           </div>
         </div>
